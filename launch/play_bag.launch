@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- bagfile path -->
+    <!-- <arg name="bagfile" default="/home/username/~.bag"/> -->
+    <arg name="bagfile" default="/home/amsl/bagfiles/rwrc23/rwrc23_main_2023-08-15-22-51-39.bag"/>
+
+    <!-- param -->
+    <arg name="hz" default="8"/>
+    <arg name="cmd_vel" default="/cmd_vel"/>
+    <arg name="candidate_trajectories" default="/candidate_trajectories"/>
+    <arg name="selected_trajectory" default="/selected_trajectory"/>
+    <arg name="local_goal" default="/local_goal"/>
+    <arg name="robot_footprint" default="/robot_footprint"/>
+    <!-- <arg name="local_map" default="/local_map"/> -->
+    <arg name="local_map" default="/local_map/expand"/>
+    <arg name="odom" default="/odom"/>
+
+
+    <rosparam param="/use_sim_time">true</rosparam>
+
+    <include file="$(find point_follow_planner)/launch/local_planner.launch">
+        <arg name="hz" value="$(arg hz)"/>
+        <arg name="cmd_vel" value="$(arg cmd_vel)"/>
+        <arg name="candidate_trajectories" value="$(arg candidate_trajectories)"/>
+        <arg name="selected_trajectory" value="$(arg selected_trajectory)"/>
+        <arg name="local_goal" value="$(arg local_goal)"/>
+        <arg name="robot_footprint" value="$(arg robot_footprint)"/>
+        <arg name="local_map" value="$(arg local_map)"/>
+        <arg name="odom" value="$(arg odom)"/>
+    </include>
+
+    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="
+        $(arg bagfile)
+        --clock
+        --topics
+        /local_goal
+        /local_map/expand
+        /odom
+        /robot_footprint
+        /tf
+        /tf_static
+        ">
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find point_follow_planner)/config/rviz.rviz"/>
+</launch>
