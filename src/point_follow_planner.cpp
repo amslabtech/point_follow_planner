@@ -275,7 +275,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     // search safety trajectory
     std::vector<State> optimal_traj;
     bool is_found_safety_traj = false;
-    for(double velocity=dynamic_window.max_velocity_; 0.0<=velocity; velocity-=velocity_resolution_){
+    for(double velocity=dynamic_window.max_velocity_; dynamic_window.min_velocity_<=velocity; velocity-=velocity_resolution_){
         State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
         std::vector<State> traj;
 
