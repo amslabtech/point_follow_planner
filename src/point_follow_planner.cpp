@@ -1,4 +1,5 @@
 #include "point_follow_planner/point_follow_planner.h"
+#include "jsk_recognition_msgs/PolygonArray.h"
 
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), local_goal_subscribed_(false), robot_footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
@@ -36,6 +37,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     velocity_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     candidate_trajectories_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("candidate_trajectories", 1);
     selected_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("selected_trajectory", 1);
+    robot_footprints_pub_ = private_nh_.advertise<jsk_recognition_msgs::PolygonArray>("robot_footprints", 1);
 
     local_goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::local_goal_callback, this);
     robot_footprint_sub_ = nh_.subscribe("/robot_footprint", 1, &PointFollowPlanner::robot_footprint_callback, this);
@@ -64,18 +66,16 @@ PointFollowPlanner::Window::Window(const double min_v, const double max_v, const
 
 void PointFollowPlanner::local_goal_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 {
-    geometry_msgs::TransformStamped transform_stamped;
+    local_goal_ = *msg;
     try
     {
-        transform_stamped = tf_buffer_.lookupTransform(robot_frame_, local_goal_.header.frame_id, ros::Time(0));
+        listener_.transformPose(robot_frame_, ros::Time(0), local_goal_, local_goal_.header.frame_id, local_goal_);
         local_goal_subscribed_ = true;
     }
-    catch(tf2::TransformException &ex)
+    catch(tf::TransformException ex)
     {
-        ROS_WARN("%s",ex.what());
-        return;
+        ROS_ERROR("%s", ex.what());
     }
-    tf2::doTransform(*msg, local_goal_, transform_stamped);
 }
 
 
@@ -145,6 +145,7 @@ double PointFollowPlanner::calc_goal_cost(const std::vector<State>& traj, const 
 geometry_msgs::PolygonStamped PointFollowPlanner::move_footprint(const State& target_pose)
 {
     geometry_msgs::PolygonStamped robot_footprint = robot_footprint_;
+    robot_footprint.header.stamp = ros::Time::now();
     for(auto& point : robot_footprint.polygon.points)
     {
         Eigen::VectorXf point_in(2);
@@ -317,7 +318,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
 geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 {
     const Window dynamic_window = calc_dynamic_window(current_velocity_);
-    const Eigen::Vector3d goal(local_goal_.pose.position.x, local_goal_.pose.position.y, tf2::getYaw(local_goal_.pose.orientation));
+    const Eigen::Vector3d goal(local_goal_.pose.position.x, local_goal_.pose.position.y, tf::getYaw(local_goal_.pose.orientation));
 
     return planning(dynamic_window, goal);
 }
@@ -325,14 +326,14 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 
 bool PointFollowPlanner::can_move()
 {
-    if(!local_goal_subscribed_) ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
-    if(!robot_footprint_subscribed_) ROS_WARN_THROTTLE(1.0, "Robot footprint has not been updated");
-    if(!local_map_updated_) ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
-    if(!odom_updated_) ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
+    if(!local_goal_subscribed_) ROS_ERROR_THROTTLE(1.0, "Local goal has not been updated");
+    if(!robot_footprint_subscribed_) ROS_ERROR_THROTTLE(1.0, "Robot footprint has not been updated");
+    if(!local_map_updated_) ROS_ERROR_THROTTLE(1.0, "Local map has not been updated");
+    if(!odom_updated_) ROS_ERROR_THROTTLE(1.0, "Odom has not been updated");
 
     if(local_goal_subscribed_
         and robot_footprint_subscribed_
-        and local_goal_subscribed_
+        and local_map_updated_
         and odom_updated_)
         return true;
     else
@@ -343,7 +344,6 @@ bool PointFollowPlanner::can_move()
 void PointFollowPlanner::process()
 {
     ros::Rate loop_rate(hz_);
-    tf2_ros::TransformListener tf_listener(tf_buffer_);
 
     while(ros::ok())
     {
@@ -434,4 +434,16 @@ void PointFollowPlanner::visualize_trajectories(const std::vector<std::vector<St
     }
 
     pub.publish(v_trajectories);
+}
+
+void PointFollowPlanner::visualize_footprints(const std::vector<State>& trajectory, const ros::Publisher& pub)
+{
+    jsk_recognition_msgs::PolygonArray robot_footprints;
+    robot_footprints.header.frame_id = robot_frame_;
+    robot_footprints.header.stamp = ros::Time::now();
+
+    for (const auto& state : trajectory)
+        robot_footprints.polygons.push_back(move_footprint(state));
+
+    robot_footprints_pub_.publish(robot_footprints);
 }

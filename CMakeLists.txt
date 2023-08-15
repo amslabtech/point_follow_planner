@@ -9,8 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
   visualization_msgs
-  tf2
-  tf2_ros
+  jsk_recognition_msgs
+  tf
 )
 
 find_package(Eigen3 REQUIRED COMPONENTS system)

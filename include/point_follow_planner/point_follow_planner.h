@@ -11,8 +11,9 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <tf2/utils.h>
-#include <tf2_ros/transform_listener.h>
+#include <jsk_recognition_msgs/PolygonArray.h>
+#include <tf/tf.h>
+#include <tf/transform_listener.h>
 
 #include <Eigen/Dense>
 
@@ -71,6 +72,7 @@ protected:
 
     void visualize_trajectory(const std::vector<State>& trajectory, const double r, const double g, const double b, const ros::Publisher& pub);
     void visualize_trajectories(const std::vector<std::vector<State>>& trajectories, const double r, const double g, const double b, const int trajectories_size, const ros::Publisher& pub);
+    void visualize_footprints(const std::vector<State>& trajectory, const ros::Publisher& pub);
 
 
     // param
@@ -98,6 +100,7 @@ protected:
     ros::Publisher velocity_pub_;
     ros::Publisher candidate_trajectories_pub_;
     ros::Publisher selected_trajectory_pub_;
+    ros::Publisher robot_footprints_pub_;
     ros::Subscriber local_map_sub_;
     ros::Subscriber local_goal_sub_;
     ros::Subscriber odom_sub_;
@@ -108,7 +111,7 @@ protected:
     geometry_msgs::PolygonStamped robot_footprint_;
     geometry_msgs::Twist current_velocity_;
 
-    tf2_ros::Buffer tf_buffer_;
+    tf::TransformListener listener_;
 };
 
 #endif // Point_Follow_PLANNER_H
