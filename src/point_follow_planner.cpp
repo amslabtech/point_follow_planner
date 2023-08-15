@@ -148,7 +148,7 @@ geometry_msgs::PolygonStamped PointFollowPlanner::move_outline(const State& targ
     for(auto& point : robot_outline.polygon.points)
     {
         Eigen::VectorXf point_in(2);
-        point_in << target_pose.x_, target_pose.y_;
+        point_in << point.x, point.y;
         Eigen::Matrix2f rot;
         rot = Eigen::Rotation2Df(target_pose.yaw_);
         const Eigen::VectorXf point_out = rot * point_in;
@@ -156,7 +156,6 @@ geometry_msgs::PolygonStamped PointFollowPlanner::move_outline(const State& targ
         point.x = point_out.x() + target_pose.x_;
         point.y = point_out.y() + target_pose.y_;
     }
-
     return robot_outline;
 }
 
@@ -169,22 +168,22 @@ bool PointFollowPlanner::is_inside_of_triangle(const geometry_msgs::Point& targe
         exit(1);
     }
 
-    Eigen::Vector3d vector_A(triangle.points[0].x, triangle.points[0].y, 0.0);
-    Eigen::Vector3d vector_B(triangle.points[1].x, triangle.points[1].y, 0.0);
-    Eigen::Vector3d vector_C(triangle.points[2].x, triangle.points[2].y, 0.0);
-    Eigen::Vector3d vector_P(target_point.x, target_point.y, 0.0);
+    const Eigen::Vector3d vector_A(triangle.points[0].x, triangle.points[0].y, 0.0);
+    const Eigen::Vector3d vector_B(triangle.points[1].x, triangle.points[1].y, 0.0);
+    const Eigen::Vector3d vector_C(triangle.points[2].x, triangle.points[2].y, 0.0);
+    const Eigen::Vector3d vector_P(target_point.x, target_point.y, 0.0);
 
-    Eigen::Vector3d vector_AB = vector_B - vector_A;
-    Eigen::Vector3d vector_BP = vector_P - vector_B;
-    Eigen::Vector3d cross1 = vector_AB.cross(vector_BP);
+    const Eigen::Vector3d vector_AB = vector_B - vector_A;
+    const Eigen::Vector3d vector_BP = vector_P - vector_B;
+    const Eigen::Vector3d cross1 = vector_AB.cross(vector_BP);
 
-    Eigen::Vector3d vector_BC = vector_C - vector_B;
-    Eigen::Vector3d vector_CP = vector_P - vector_C;
-    Eigen::Vector3d cross2 = vector_BC.cross(vector_CP);
+    const Eigen::Vector3d vector_BC = vector_C - vector_B;
+    const Eigen::Vector3d vector_CP = vector_P - vector_C;
+    const Eigen::Vector3d cross2 = vector_BC.cross(vector_CP);
 
-    Eigen::Vector3d vector_CA = vector_A - vector_C;
-    Eigen::Vector3d vector_AP = vector_P - vector_A;
-    Eigen::Vector3d cross3 = vector_CA.cross(vector_AP);
+    const Eigen::Vector3d vector_CA = vector_A - vector_C;
+    const Eigen::Vector3d vector_AP = vector_P - vector_A;
+    const Eigen::Vector3d cross3 = vector_CA.cross(vector_AP);
 
     if ((0<cross1.z() and 0<cross2.z() and 0<cross3.z()) or (cross1.z()<0 and cross2.z()<0 and cross3.z()<0))
         return true;
@@ -354,7 +353,6 @@ void PointFollowPlanner::process()
 
         odom_updated_ = false;
         local_map_updated_ = false;
-
         ros::spinOnce();
         loop_rate.sleep();
     }
