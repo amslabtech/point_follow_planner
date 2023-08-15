@@ -326,31 +326,18 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 
 bool PointFollowPlanner::can_move()
 {
-    if(!local_goal_subscribed_)
-    {
-        ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
-        return false;
-    }
+    if(!local_goal_subscribed_) ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
+    if(!robot_outline_subscribed_) ROS_WARN_THROTTLE(1.0, "Robot outline has not been updated");
+    if(!local_map_updated_) ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
+    if(!odom_updated_) ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
 
-    if(!robot_outline_subscribed_)
-    {
-        ROS_WARN_THROTTLE(1.0, "Robot outline has not been updated");
+    if(local_goal_subscribed_
+        and robot_outline_subscribed_
+        and local_goal_subscribed_
+        and odom_updated_)
+        return true;
+    else
         return false;
-    }
-
-    if(!local_map_updated_)
-    {
-        ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
-        return false;
-    }
-
-    if(!odom_updated_)
-    {
-        ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
-        return false;
-    }
-
-    return true;
 }
 
 
