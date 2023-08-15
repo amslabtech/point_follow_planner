@@ -1,7 +1,7 @@
 #include "point_follow_planner/point_follow_planner.h"
 
 PointFollowPlanner::PointFollowPlanner(void)
-    :private_nh_("~"), local_goal_subscribed_(false), robot_outline_subscribed_(false), odom_updated_(false), local_map_updated_(false)
+    :private_nh_("~"), local_goal_subscribed_(false), robot_footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
 {
     private_nh_.param("hz", hz_, {10});
     private_nh_.param("robot_frame", robot_frame_, {"base_link"});
@@ -38,7 +38,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     selected_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("selected_trajectory", 1);
 
     local_goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::local_goal_callback, this);
-    robot_outline_sub_ = nh_.subscribe("/robot_outline", 1, &PointFollowPlanner::robot_outline_callback, this);
+    robot_footprint_sub_ = nh_.subscribe("/robot_footprint", 1, &PointFollowPlanner::robot_footprint_callback, this);
     local_map_sub_ = nh_.subscribe("/local_map", 1, &PointFollowPlanner::local_map_callback, this);
     odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
 }
@@ -79,10 +79,10 @@ void PointFollowPlanner::local_goal_callback(const geometry_msgs::PoseStampedCon
 }
 
 
-void PointFollowPlanner::robot_outline_callback(const geometry_msgs::PolygonStampedPtr& msg)
+void PointFollowPlanner::robot_footprint_callback(const geometry_msgs::PolygonStampedPtr& msg)
 {
-    robot_outline_ = *msg;
-    robot_outline_subscribed_ = true;
+    robot_footprint_ = *msg;
+    robot_footprint_subscribed_ = true;
 }
 
 
@@ -142,10 +142,10 @@ double PointFollowPlanner::calc_goal_cost(const std::vector<State>& traj, const 
 }
 
 
-geometry_msgs::PolygonStamped PointFollowPlanner::move_outline(const State& target_pose)
+geometry_msgs::PolygonStamped PointFollowPlanner::move_footprint(const State& target_pose)
 {
-    geometry_msgs::PolygonStamped robot_outline = robot_outline_;
-    for(auto& point : robot_outline.polygon.points)
+    geometry_msgs::PolygonStamped robot_footprint = robot_footprint_;
+    for(auto& point : robot_footprint.polygon.points)
     {
         Eigen::VectorXf point_in(2);
         point_in << point.x, point.y;
@@ -156,7 +156,7 @@ geometry_msgs::PolygonStamped PointFollowPlanner::move_outline(const State& targ
         point.x = point_out.x() + target_pose.x_;
         point.y = point_out.y() + target_pose.y_;
     }
-    return robot_outline;
+    return robot_footprint;
 }
 
 
@@ -194,22 +194,22 @@ bool PointFollowPlanner::is_inside_of_triangle(const geometry_msgs::Point& targe
 
 bool PointFollowPlanner::is_inside_of_robot(const geometry_msgs::Pose& obstacle, const State & state)
 {
-    const geometry_msgs::PolygonStamped robot_outline = move_outline(state);
+    const geometry_msgs::PolygonStamped robot_footprint = move_footprint(state);
 
     geometry_msgs::Point32 state_point;
     state_point.x = state.x_;
     state_point.y = state.y_;
 
-    for(int i=0; i<robot_outline.polygon.points.size(); i++)
+    for(int i=0; i<robot_footprint.polygon.points.size(); i++)
     {
         geometry_msgs::Polygon triangle;
         triangle.points.push_back(state_point);
-        triangle.points.push_back(robot_outline.polygon.points[i]);
+        triangle.points.push_back(robot_footprint.polygon.points[i]);
 
-        if(i != robot_outline.polygon.points.size()-1)
-            triangle.points.push_back(robot_outline.polygon.points[i+1]);
+        if(i != robot_footprint.polygon.points.size()-1)
+            triangle.points.push_back(robot_footprint.polygon.points[i+1]);
         else
-            triangle.points.push_back(robot_outline.polygon.points[0]);
+            triangle.points.push_back(robot_footprint.polygon.points[0]);
 
         if(is_inside_of_triangle(obstacle.position, triangle))
             return true;
@@ -326,12 +326,12 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 bool PointFollowPlanner::can_move()
 {
     if(!local_goal_subscribed_) ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
-    if(!robot_outline_subscribed_) ROS_WARN_THROTTLE(1.0, "Robot outline has not been updated");
+    if(!robot_footprint_subscribed_) ROS_WARN_THROTTLE(1.0, "Robot footprint has not been updated");
     if(!local_map_updated_) ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
     if(!odom_updated_) ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
 
     if(local_goal_subscribed_
-        and robot_outline_subscribed_
+        and robot_footprint_subscribed_
         and local_goal_subscribed_
         and odom_updated_)
         return true;

@@ -52,7 +52,7 @@ protected:
 
     // callback function
     void local_goal_callback(const geometry_msgs::PoseStampedConstPtr& msg);
-    void robot_outline_callback(const geometry_msgs::PolygonStampedPtr& msg);
+    void robot_footprint_callback(const geometry_msgs::PolygonStampedPtr& msg);
     void local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg);
     void odom_callback(const nav_msgs::OdometryConstPtr& msg);
 
@@ -64,7 +64,7 @@ protected:
     bool is_inside_of_triangle(const geometry_msgs::Point& target_point, const geometry_msgs::Polygon& triangle);
     bool is_inside_of_robot(const geometry_msgs::Pose& obstacle, const State & state);
     double calc_goal_cost(const std::vector<State>& traj, const Eigen::Vector3d& goal);
-    geometry_msgs::PolygonStamped move_outline(const State& target_pose);
+    geometry_msgs::PolygonStamped move_footprint(const State& target_pose);
     geometry_msgs::Twist planning(const Window dynamic_window, const Eigen::Vector3d goal);
     geometry_msgs::Twist calc_cmd_vel();
     Window calc_dynamic_window(const geometry_msgs::Twist& current_velocity);
@@ -75,7 +75,7 @@ protected:
 
     // param
     bool local_goal_subscribed_;
-    bool robot_outline_subscribed_;
+    bool robot_footprint_subscribed_;
     bool odom_updated_;
     bool local_map_updated_;
     double hz_;
@@ -101,11 +101,11 @@ protected:
     ros::Subscriber local_map_sub_;
     ros::Subscriber local_goal_sub_;
     ros::Subscriber odom_sub_;
-    ros::Subscriber robot_outline_sub_;
+    ros::Subscriber robot_footprint_sub_;
 
     geometry_msgs::PoseStamped local_goal_;
     geometry_msgs::PoseArray obs_list_;
-    geometry_msgs::PolygonStamped robot_outline_;
+    geometry_msgs::PolygonStamped robot_footprint_;
     geometry_msgs::Twist current_velocity_;
 
     tf2_ros::Buffer tf_buffer_;

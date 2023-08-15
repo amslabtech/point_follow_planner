@@ -11,7 +11,7 @@
     <arg name="candidate_trajectories" default="/candidate_trajectories"/>
     <arg name="selected_trajectory" default="/selected_trajectory"/>
     <arg name="local_goal" default="/local_goal"/>
-    <arg name="robot_outline" default="/robot_outline"/>
+    <arg name="robot_footprint" default="/robot_footprint"/>
     <arg name="local_map" default="/local_map"/>
     <arg name="odom" default="/odom"/>
 
@@ -25,7 +25,7 @@
         <remap from="/candidate_trajectories" to="$(arg candidate_trajectories)"/>
         <remap from="/selected_trajectory" to="$(arg selected_trajectory)"/>
         <remap from="/local_goal" to="$(arg local_goal)"/>
-        <remap from="/robot_outline" to="$(arg robot_outline)"/>
+        <remap from="/robot_footprint" to="$(arg robot_footprint)"/>
         <remap from="/local_map" to="$(arg local_map)"/>
         <remap from="/odom" to="$(arg odom)"/>
     </node>
