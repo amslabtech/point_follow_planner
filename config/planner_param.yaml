@@ -1,0 +1,5 @@
+max_dist: 10.0
+velocity_resolution: 0.1
+yawrate_resolution: 0.1
+angle_resolution: 0.0087
+predict_time: 4.0

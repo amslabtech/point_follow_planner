@@ -1,0 +1,13 @@
+robot_frame: "base_link"
+max_velocity: 0.8
+min_velocity: 0.0
+max_yawrate: 0.8
+max_acceleration: 1.0
+max_d_yawrate: 5.0
+
+ # Outline
+ ## each side length from origin of robot_frame [m]
+front_side_distance: 0.760
+rear_side_distance: 0.225
+right_side_distance: 0.3
+left_side_distance: 0.3
