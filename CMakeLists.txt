@@ -52,8 +52,8 @@ add_dependencies(point_follow_planner_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${
 
 ## Declare a C++ executable
 add_executable(point_follow_planner  src/point_follow_planner_node.cpp)
-add_executable(robot_outline_creator src/robot_outline_creator_node.cpp)
+add_executable(robot_outline_publisher src/robot_outline_publisher_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(point_follow_planner  ${roscpp_LIBRARIES} ${catkin_LIBRARIES} point_follow_planner_lib)
-target_link_libraries(robot_outline_creator ${roscpp_LIBRARIES} ${catkin_LIBRARIES} point_follow_planner_lib)
+target_link_libraries(robot_outline_publisher ${roscpp_LIBRARIES} ${catkin_LIBRARIES})

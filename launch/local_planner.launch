@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <launch>
+    <arg name="ns" default="local_planner"/>
+
     <!-- param -->
     <arg name="hz" default="10"/>
     <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
@@ -14,7 +16,7 @@
     <arg name="odom" default="/odom"/>
 
 
-    <node pkg="point_follow_planner" type="point_follow_planner" name="point_follow_planner" ns="local_planner" output="screen">
+    <node pkg="point_follow_planner" type="point_follow_planner" name="point_follow_planner" ns="$(arg ns)" output="screen">
         <rosparam command="load" file="$(arg robot_param)"/>
         <rosparam command="load" file="$(arg planner_param)"/>
         <param name="/hz" value="$(arg hz)"/>

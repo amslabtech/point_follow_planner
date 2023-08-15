@@ -1,9 +1,11 @@
-#include "point_follow_planner/point_follow_planner.h"
+#include <ros/ros.h>
+#include <geometry_msgs/PolygonStamped.h>
 
-class RobotOutlineCreator
+
+class RobotOutlinePublisher
 {
 public:
-    RobotOutlineCreator(void);
+    RobotOutlinePublisher(void);
     void process();
 
 protected:
@@ -27,7 +29,7 @@ protected:
 };
 
 
-RobotOutlineCreator::RobotOutlineCreator():private_nh_("~")
+RobotOutlinePublisher::RobotOutlinePublisher():private_nh_("~")
 {
     // param
     private_nh_.param("hz", hz_, 5);
@@ -46,7 +48,7 @@ RobotOutlineCreator::RobotOutlineCreator():private_nh_("~")
     set_corners_of_rectangle();
 
 
-    ROS_INFO_STREAM("=== Robot Outline Creator ===");
+    ROS_INFO_STREAM("=== Robot Outline Publisher ===");
     ROS_INFO_STREAM("hz: " << hz_);
     ROS_INFO_STREAM("robot_frame: " << robot_frame_);
     ROS_INFO_STREAM("front_side_distance: " << front_side_distance_);
@@ -56,7 +58,7 @@ RobotOutlineCreator::RobotOutlineCreator():private_nh_("~")
 }
 
 
-void RobotOutlineCreator::set_corners_of_rectangle()
+void RobotOutlinePublisher::set_corners_of_rectangle()
 {
     geometry_msgs::Point32 point;
 
@@ -79,14 +81,14 @@ void RobotOutlineCreator::set_corners_of_rectangle()
 }
 
 
-void RobotOutlineCreator::visualize_outline()
+void RobotOutlinePublisher::visualize_outline()
 {
     robot_outline_.header.stamp = ros::Time::now();
     outline_pub_.publish(robot_outline_);
 }
 
 
-void RobotOutlineCreator::process()
+void RobotOutlinePublisher::process()
 {
     ros::Rate loop_rate(hz_);
 
@@ -101,9 +103,9 @@ void RobotOutlineCreator::process()
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "robot_outline_creator");
-    RobotOutlineCreator robot_outline_creator;
-    robot_outline_creator.process();
+    ros::init(argc, argv, "robot_outline_publisher");
+    RobotOutlinePublisher robot_outline_publisher;
+    robot_outline_publisher.process();
 
     return 0;
 }

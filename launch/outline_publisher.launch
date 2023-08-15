@@ -6,7 +6,7 @@
     <!-- topic name -->
     <arg name="robot_outline" default="/robot_outline"/>
 
-    <node pkg="point_follow_planner" type="robot_outline_creator" name="robot_outline_creator" ns="local_planner" output="screen">
+    <node pkg="point_follow_planner" type="robot_outline_publisher" name="robot_outline_publisher" output="screen">
         <rosparam command="load" file="$(arg robot_param)"/>
         <param name="hz" value="$(arg hz)"/>
         <remap from="/robot_outline" to="$(arg robot_outline)"/>
