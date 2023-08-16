@@ -12,7 +12,6 @@
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>visualization_msgs</depend>
-  <depend>jsk_recognition_msgs</depend>
   <depend>tf</depend>
   <depend>eigen</depend>
 </package>
