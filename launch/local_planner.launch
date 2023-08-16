@@ -14,6 +14,7 @@
     <arg name="robot_footprint" default="/robot_footprint"/>
     <arg name="local_map" default="/local_map"/>
     <arg name="odom" default="/odom"/>
+    <arg name="predict_robot_footprint" default="/predict_robot_footprint"/>
 
 
     <node pkg="point_follow_planner" type="point_follow_planner" name="point_follow_planner" ns="$(arg ns)" output="screen">
@@ -28,5 +29,6 @@
         <remap from="/robot_footprint" to="$(arg robot_footprint)"/>
         <remap from="/local_map" to="$(arg local_map)"/>
         <remap from="/odom" to="$(arg odom)"/>
+        <remap from="/predict_robot_footprint" to="$(arg predict_robot_footprint)"/>
     </node>
 </launch>

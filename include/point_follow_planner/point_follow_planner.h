@@ -11,7 +11,6 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <jsk_recognition_msgs/PolygonArray.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 
@@ -72,7 +71,6 @@ protected:
 
     void visualize_trajectory(const std::vector<State>& trajectory, const double r, const double g, const double b, const ros::Publisher& pub);
     void visualize_trajectories(const std::vector<std::vector<State>>& trajectories, const double r, const double g, const double b, const int trajectories_size, const ros::Publisher& pub);
-    void visualize_footprints(const std::vector<State>& trajectory, const ros::Publisher& pub);
 
 
     // param
@@ -100,11 +98,11 @@ protected:
     ros::Publisher velocity_pub_;
     ros::Publisher candidate_trajectories_pub_;
     ros::Publisher selected_trajectory_pub_;
-    ros::Publisher robot_footprints_pub_;
+    ros::Publisher predict_robot_footprint_pub_;
     ros::Subscriber local_map_sub_;
     ros::Subscriber local_goal_sub_;
     ros::Subscriber odom_sub_;
-    ros::Subscriber robot_footprint_sub_;
+    ros::Subscriber base_robot_footprint_sub_;
 
     geometry_msgs::PoseStamped local_goal_;
     geometry_msgs::PoseArray obs_list_;

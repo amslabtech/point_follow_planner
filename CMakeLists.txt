@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(point_follow_planner)
 
-add_compile_options(-std=c++17)
+add_compile_options(-std=c++17 -O2 -g)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS

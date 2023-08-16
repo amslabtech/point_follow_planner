@@ -1,5 +1,6 @@
 #include "point_follow_planner/point_follow_planner.h"
-#include "jsk_recognition_msgs/PolygonArray.h"
+#include "geometry_msgs/PolygonStamped.h"
+#include <algorithm>
 
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), local_goal_subscribed_(false), robot_footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
@@ -37,10 +38,10 @@ PointFollowPlanner::PointFollowPlanner(void)
     velocity_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     candidate_trajectories_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("candidate_trajectories", 1);
     selected_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("selected_trajectory", 1);
-    robot_footprints_pub_ = private_nh_.advertise<jsk_recognition_msgs::PolygonArray>("robot_footprints", 1);
+    predict_robot_footprint_pub_ = private_nh_.advertise<geometry_msgs::PolygonStamped>("predict_robot_footprint", 1);
 
     local_goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::local_goal_callback, this);
-    robot_footprint_sub_ = nh_.subscribe("/robot_footprint", 1, &PointFollowPlanner::robot_footprint_callback, this);
+    base_robot_footprint_sub_ = nh_.subscribe("/robot_footprint", 1, &PointFollowPlanner::robot_footprint_callback, this);
     local_map_sub_ = nh_.subscribe("/local_map", 1, &PointFollowPlanner::local_map_callback, this);
     odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
 }
@@ -116,8 +117,13 @@ void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid& map)
             const int index_y = int(floor((pose.position.y - map.info.origin.position.y) / map.info.resolution));
 
             if((0<=index_x and index_x<map.info.width) and (0<=index_y and index_y<map.info.height))
+            {
                 if(map.data[index_x + index_y*map.info.width] == 100)
+                {
                     obs_list_.poses.push_back(pose);
+                    break;
+                }
+            }
         }
     }
 }
@@ -196,7 +202,6 @@ bool PointFollowPlanner::is_inside_of_triangle(const geometry_msgs::Point& targe
 bool PointFollowPlanner::is_inside_of_robot(const geometry_msgs::Pose& obstacle, const State & state)
 {
     const geometry_msgs::PolygonStamped robot_footprint = move_footprint(state);
-
     geometry_msgs::Point32 state_point;
     state_point.x = state.x_;
     state_point.y = state.y_;
@@ -248,8 +253,10 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     double optimal_yawrate;
 
     // search optimal yawrate
-    for(double velocity=dynamic_window.max_velocity_; dynamic_window.min_velocity_<=velocity; velocity-=velocity_resolution_){
-        for(double yawrate=dynamic_window.max_yawrate_; dynamic_window.min_yawrate_<=yawrate; yawrate-=yawrate_resolution_){
+    for(double velocity=dynamic_window.min_velocity_; velocity<=dynamic_window.max_velocity_; velocity+=velocity_resolution_)
+    {
+        for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution_)
+        {
             State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
             std::vector<State> traj;
 
@@ -276,7 +283,8 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     // search safety trajectory
     std::vector<State> optimal_traj;
     bool is_found_safety_traj = false;
-    for(double velocity=dynamic_window.max_velocity_; dynamic_window.min_velocity_<=velocity; velocity-=velocity_resolution_){
+    for(double velocity=dynamic_window.min_velocity_; velocity<=dynamic_window.max_velocity_; velocity+=velocity_resolution_)
+    {
         State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
         std::vector<State> traj;
 
@@ -292,6 +300,9 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         {
             optimal_traj = traj;
             is_found_safety_traj = true;
+        }
+        else
+        {
             break;
         }
     }
@@ -306,6 +317,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
 
     visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
     visualize_trajectory(optimal_traj, 1.0, 0.0, 0.0, selected_trajectory_pub_);
+    predict_robot_footprint_pub_.publish(move_footprint(optimal_traj.back()));
 
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x  = optimal_traj[0].velocity_;
@@ -326,10 +338,10 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 
 bool PointFollowPlanner::can_move()
 {
-    if(!local_goal_subscribed_) ROS_ERROR_THROTTLE(1.0, "Local goal has not been updated");
-    if(!robot_footprint_subscribed_) ROS_ERROR_THROTTLE(1.0, "Robot footprint has not been updated");
-    if(!local_map_updated_) ROS_ERROR_THROTTLE(1.0, "Local map has not been updated");
-    if(!odom_updated_) ROS_ERROR_THROTTLE(1.0, "Odom has not been updated");
+    if(!local_goal_subscribed_) ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
+    if(!robot_footprint_subscribed_) ROS_WARN_THROTTLE(1.0, "Robot footprint has not been updated");
+    if(!local_map_updated_) ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
+    if(!odom_updated_) ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
 
     if(local_goal_subscribed_
         and robot_footprint_subscribed_
@@ -392,8 +404,9 @@ void PointFollowPlanner::visualize_trajectory(const std::vector<State>& trajecto
 void PointFollowPlanner::visualize_trajectories(const std::vector<std::vector<State>>& trajectories, const double r, const double g, const double b, const int trajectories_size, const ros::Publisher& pub)
 {
     visualization_msgs::MarkerArray v_trajectories;
+    int count = 0;
 
-    for(int count = 0; count<trajectories.size(); count++)
+    for(; count<trajectories.size(); count++)
     {
         visualization_msgs::Marker v_trajectory;
         v_trajectory.header.frame_id = robot_frame_;
@@ -420,7 +433,7 @@ void PointFollowPlanner::visualize_trajectories(const std::vector<std::vector<St
         v_trajectories.markers.push_back(v_trajectory);
     }
 
-    for(int count = 0; count<trajectories_size; count++)
+    for(; count<trajectories_size; count++)
     {
         visualization_msgs::Marker v_trajectory;
         v_trajectory.header.frame_id = robot_frame_;
@@ -434,16 +447,4 @@ void PointFollowPlanner::visualize_trajectories(const std::vector<std::vector<St
     }
 
     pub.publish(v_trajectories);
-}
-
-void PointFollowPlanner::visualize_footprints(const std::vector<State>& trajectory, const ros::Publisher& pub)
-{
-    jsk_recognition_msgs::PolygonArray robot_footprints;
-    robot_footprints.header.frame_id = robot_frame_;
-    robot_footprints.header.stamp = ros::Time::now();
-
-    for (const auto& state : trajectory)
-        robot_footprints.polygons.push_back(move_footprint(state));
-
-    robot_footprints_pub_.publish(robot_footprints);
 }
