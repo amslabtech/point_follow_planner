@@ -1,6 +1,4 @@
 #include "point_follow_planner/point_follow_planner.h"
-#include "geometry_msgs/PolygonStamped.h"
-#include <algorithm>
 
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), local_goal_subscribed_(false), robot_footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
