@@ -90,6 +90,7 @@ protected:
     double angle_resolution_;
     double predict_time_;
     double dt_;
+    double angle_to_goal_th_;
 
     std::string robot_frame_;
 

@@ -15,6 +15,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param("yawrate_resolution", yawrate_resolution_, {0.1});
     private_nh_.param("angle_resolution", angle_resolution_, {0.2});
     private_nh_.param("predict_time", predict_time_, {3.0});
+    private_nh_.param("angle_to_goal_th", angle_to_goal_th_, {0.26});
 
     dt_ = 1.0 / hz_;
 
@@ -32,6 +33,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("yawrate_resolution: " << yawrate_resolution_);
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
     ROS_INFO_STREAM("predict_time: " << predict_time_);
+    ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
 
     velocity_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     candidate_trajectories_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("candidate_trajectories", 1);
@@ -246,6 +248,15 @@ void PointFollowPlanner::motion(State& state, const double velocity, const doubl
 
 geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, const Eigen::Vector3d goal)
 {
+    const double angle_to_goal = atan2(goal.y(), goal.x());
+    if(angle_to_goal_th_ < fabs(angle_to_goal))
+    {
+        geometry_msgs::Twist cmd_vel;
+        cmd_vel.linear.x  = 0.0;
+        cmd_vel.angular.z = std::min(std::max(angle_to_goal, -0.3), 0.3);
+        return cmd_vel;
+    }
+
     float min_cost = 1e6;
     std::vector<std::vector<State>> trajectories;
     double optimal_yawrate;
@@ -255,6 +266,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     {
         for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution_)
         {
+            if(velocity < velocity_resolution_) continue;
             State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
             std::vector<State> traj;
 
@@ -308,7 +320,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     if(!is_found_safety_traj)
     {
         std::vector<State> traj;
-        State state(0.0, 0.0, 0.0, 0.0, optimal_yawrate);
+        State state(0.0, 0.0, 0.0, 0.0, 0.0);
         traj.push_back(state);
         optimal_traj = traj;
     }
@@ -358,7 +370,15 @@ void PointFollowPlanner::process()
     while(ros::ok())
     {
         geometry_msgs::Twist cmd_vel;
-        if(can_move()) cmd_vel = calc_cmd_vel();
+        if(can_move())
+        {
+            cmd_vel = calc_cmd_vel();
+        }
+        else
+        {
+            cmd_vel.linear.x = 0.0;
+            cmd_vel.angular.z = 0.0;
+        }
         velocity_pub_.publish(cmd_vel);
 
         odom_updated_ = false;
