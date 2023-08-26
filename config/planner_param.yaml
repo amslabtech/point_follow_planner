@@ -4,3 +4,4 @@ yawrate_resolution: 0.1
 angle_resolution: 0.0087
 predict_time: 4.0
 angle_to_goal_th: 0.26
+max_yawrate_in_situ_turns: 0.3

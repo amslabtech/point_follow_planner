@@ -8,6 +8,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param("max_velocity", max_velocity_, {1.0});
     private_nh_.param("min_velocity", min_velocity_, {0.0});
     private_nh_.param("max_yawrate", max_yawrate_, {0.8});
+    private_nh_.param("max_yawrate_in_situ_turns", max_yawrate_in_situ_turns_, max_yawrate_);
     private_nh_.param("max_acceleration", max_acceleration_, {1.0});
     private_nh_.param("max_d_yawrate", max_d_yawrate_, {2.0});
     private_nh_.param("max_dist", max_dist_, {10.0});
@@ -252,8 +253,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     if(angle_to_goal_th_ < fabs(angle_to_goal))
     {
         geometry_msgs::Twist cmd_vel;
-        cmd_vel.linear.x  = 0.0;
-        cmd_vel.angular.z = std::min(std::max(angle_to_goal, -0.3), 0.3);
+        cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
         return cmd_vel;
     }
 
@@ -370,15 +370,7 @@ void PointFollowPlanner::process()
     while(ros::ok())
     {
         geometry_msgs::Twist cmd_vel;
-        if(can_move())
-        {
-            cmd_vel = calc_cmd_vel();
-        }
-        else
-        {
-            cmd_vel.linear.x = 0.0;
-            cmd_vel.angular.z = 0.0;
-        }
+        if(can_move()) cmd_vel = calc_cmd_vel();
         velocity_pub_.publish(cmd_vel);
 
         odom_updated_ = false;

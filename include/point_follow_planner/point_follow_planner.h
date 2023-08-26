@@ -82,6 +82,7 @@ protected:
     double max_velocity_;
     double min_velocity_;
     double max_yawrate_;
+    double max_yawrate_in_situ_turns_;
     double max_acceleration_;
     double max_d_yawrate_;
     double max_dist_;
