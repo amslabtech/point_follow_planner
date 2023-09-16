@@ -51,8 +51,8 @@ protected:
 
 
     // callback function
-    void local_goal_callback(const geometry_msgs::PoseStampedConstPtr& msg);
-    void robot_footprint_callback(const geometry_msgs::PolygonStampedPtr& msg);
+    void goal_callback(const geometry_msgs::PoseStampedConstPtr& msg);
+    void footprint_callback(const geometry_msgs::PolygonStampedPtr& msg);
     void local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg);
     void odom_callback(const nav_msgs::OdometryConstPtr& msg);
 
@@ -60,11 +60,11 @@ protected:
     void motion(State& state, const double velocity, const double yawrate);
     void raycast(const nav_msgs::OccupancyGrid& map);
     bool can_move();
-    bool is_hit_obstacle(const std::vector<State>& traj);
+    bool check_collision(const std::vector<State>& traj);
     bool is_inside_of_triangle(const geometry_msgs::Point& target_point, const geometry_msgs::Polygon& triangle);
     bool is_inside_of_robot(const geometry_msgs::Pose& obstacle, const State & state);
     double calc_goal_cost(const std::vector<State>& traj, const Eigen::Vector3d& goal);
-    geometry_msgs::PolygonStamped move_footprint(const State& target_pose);
+    geometry_msgs::PolygonStamped transform_footprint(const State& target_pose);
     geometry_msgs::Twist planning(const Window dynamic_window, const Eigen::Vector3d goal);
     geometry_msgs::Twist calc_cmd_vel();
     Window calc_dynamic_window(const geometry_msgs::Twist& current_velocity);
@@ -74,8 +74,8 @@ protected:
 
 
     // param
-    bool local_goal_subscribed_;
-    bool robot_footprint_subscribed_;
+    bool goal_subscribed_;
+    bool footprint_subscribed_;
     bool odom_updated_;
     bool local_map_updated_;
     double hz_;
@@ -97,18 +97,18 @@ protected:
 
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
-    ros::Publisher velocity_pub_;
+    ros::Publisher cmd_vel_pub_;
     ros::Publisher candidate_trajectories_pub_;
-    ros::Publisher selected_trajectory_pub_;
-    ros::Publisher predict_robot_footprint_pub_;
+    ros::Publisher best_trajectory_pub_;
+    ros::Publisher predict_footprint_pub_;
     ros::Subscriber local_map_sub_;
-    ros::Subscriber local_goal_sub_;
+    ros::Subscriber goal_sub_;
     ros::Subscriber odom_sub_;
-    ros::Subscriber base_robot_footprint_sub_;
+    ros::Subscriber footprint_sub_;
 
-    geometry_msgs::PoseStamped local_goal_;
+    geometry_msgs::PoseStamped goal_;
     geometry_msgs::PoseArray obs_list_;
-    geometry_msgs::PolygonStamped robot_footprint_;
+    geometry_msgs::PolygonStamped footprint_;
     geometry_msgs::Twist current_velocity_;
 
     tf::TransformListener listener_;

@@ -4,31 +4,32 @@
 
     <!-- param -->
     <arg name="hz" default="8"/>
-    <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
     <arg name="planner_param" default="$(find point_follow_planner)/config/planner_param.yaml"/>
+    <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
     <!-- topic name -->
     <arg name="cmd_vel" default="/cmd_vel"/>
     <arg name="candidate_trajectories" default="/candidate_trajectories"/>
-    <arg name="selected_trajectory" default="/selected_trajectory"/>
+    <arg name="best_trajectory" default="/best_trajectory"/>
     <arg name="local_goal" default="/local_goal"/>
-    <arg name="robot_footprint" default="/robot_footprint"/>
+    <arg name="footprint" default="/footprint"/>
     <arg name="local_map" default="/local_map"/>
     <arg name="odom" default="/odom"/>
-    <arg name="predict_robot_footprint" default="/predict_robot_footprint"/>
+    <arg name="predict_footprint" default="/predict_footprint"/>
 
 
     <node pkg="point_follow_planner" type="point_follow_planner" name="point_follow_planner" ns="$(arg ns)" output="screen">
-        <rosparam command="load" file="$(arg robot_param)"/>
-        <rosparam command="load" file="$(arg planner_param)"/>
+        <!-- param -->
         <param name="/hz" value="$(arg hz)"/>
-
+        <rosparam command="load" file="$(arg planner_param)"/>
+        <rosparam command="load" file="$(arg robot_param)"/>
+        <!-- topic name -->
         <remap from="/cmd_vel" to="$(arg cmd_vel)"/>
         <remap from="/candidate_trajectories" to="$(arg candidate_trajectories)"/>
-        <remap from="/selected_trajectory" to="$(arg selected_trajectory)"/>
+        <remap from="/best_trajectory" to="$(arg best_trajectory)"/>
         <remap from="/local_goal" to="$(arg local_goal)"/>
-        <remap from="/robot_footprint" to="$(arg robot_footprint)"/>
+        <remap from="/footprint" to="$(arg footprint)"/>
         <remap from="/local_map" to="$(arg local_map)"/>
         <remap from="/odom" to="$(arg odom)"/>
-        <remap from="/predict_robot_footprint" to="$(arg predict_robot_footprint)"/>
+        <remap from="/predict_footprint" to="$(arg predict_footprint)"/>
     </node>
 </launch>

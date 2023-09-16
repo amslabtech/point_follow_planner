@@ -1,7 +1,7 @@
 #include "point_follow_planner/point_follow_planner.h"
 
 PointFollowPlanner::PointFollowPlanner(void)
-    :private_nh_("~"), local_goal_subscribed_(false), robot_footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
+    :private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
 {
     private_nh_.param("hz", hz_, {10});
     private_nh_.param("robot_frame", robot_frame_, {"base_link"});
@@ -36,13 +36,13 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("predict_time: " << predict_time_);
     ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
 
-    velocity_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     candidate_trajectories_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("candidate_trajectories", 1);
-    selected_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("selected_trajectory", 1);
-    predict_robot_footprint_pub_ = private_nh_.advertise<geometry_msgs::PolygonStamped>("predict_robot_footprint", 1);
+    best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
+    predict_footprint_pub_ = private_nh_.advertise<geometry_msgs::PolygonStamped>("predict_footprint", 1);
 
-    local_goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::local_goal_callback, this);
-    base_robot_footprint_sub_ = nh_.subscribe("/robot_footprint", 1, &PointFollowPlanner::robot_footprint_callback, this);
+    goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::goal_callback, this);
+    footprint_sub_ = nh_.subscribe("/footprint", 1, &PointFollowPlanner::footprint_callback, this);
     local_map_sub_ = nh_.subscribe("/local_map", 1, &PointFollowPlanner::local_map_callback, this);
     odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
 }
@@ -66,13 +66,13 @@ PointFollowPlanner::Window::Window(const double min_v, const double max_v, const
 }
 
 
-void PointFollowPlanner::local_goal_callback(const geometry_msgs::PoseStampedConstPtr& msg)
+void PointFollowPlanner::goal_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 {
-    local_goal_ = *msg;
+    goal_ = *msg;
     try
     {
-        listener_.transformPose(robot_frame_, ros::Time(0), local_goal_, local_goal_.header.frame_id, local_goal_);
-        local_goal_subscribed_ = true;
+        listener_.transformPose(robot_frame_, ros::Time(0), goal_, goal_.header.frame_id, goal_);
+        goal_subscribed_ = true;
     }
     catch(tf::TransformException ex)
     {
@@ -81,10 +81,10 @@ void PointFollowPlanner::local_goal_callback(const geometry_msgs::PoseStampedCon
 }
 
 
-void PointFollowPlanner::robot_footprint_callback(const geometry_msgs::PolygonStampedPtr& msg)
+void PointFollowPlanner::footprint_callback(const geometry_msgs::PolygonStampedPtr& msg)
 {
-    robot_footprint_ = *msg;
-    robot_footprint_subscribed_ = true;
+    footprint_ = *msg;
+    footprint_subscribed_ = true;
 }
 
 
@@ -149,11 +149,11 @@ double PointFollowPlanner::calc_goal_cost(const std::vector<State>& traj, const 
 }
 
 
-geometry_msgs::PolygonStamped PointFollowPlanner::move_footprint(const State& target_pose)
+geometry_msgs::PolygonStamped PointFollowPlanner::transform_footprint(const State& target_pose)
 {
-    geometry_msgs::PolygonStamped robot_footprint = robot_footprint_;
-    robot_footprint.header.stamp = ros::Time::now();
-    for(auto& point : robot_footprint.polygon.points)
+    geometry_msgs::PolygonStamped footprint = footprint_;
+    footprint.header.stamp = ros::Time::now();
+    for(auto& point : footprint.polygon.points)
     {
         Eigen::VectorXf point_in(2);
         point_in << point.x, point.y;
@@ -164,7 +164,7 @@ geometry_msgs::PolygonStamped PointFollowPlanner::move_footprint(const State& ta
         point.x = point_out.x() + target_pose.x_;
         point.y = point_out.y() + target_pose.y_;
     }
-    return robot_footprint;
+    return footprint;
 }
 
 
@@ -202,21 +202,21 @@ bool PointFollowPlanner::is_inside_of_triangle(const geometry_msgs::Point& targe
 
 bool PointFollowPlanner::is_inside_of_robot(const geometry_msgs::Pose& obstacle, const State & state)
 {
-    const geometry_msgs::PolygonStamped robot_footprint = move_footprint(state);
+    const geometry_msgs::PolygonStamped footprint = transform_footprint(state);
     geometry_msgs::Point32 state_point;
     state_point.x = state.x_;
     state_point.y = state.y_;
 
-    for(int i=0; i<robot_footprint.polygon.points.size(); i++)
+    for(int i=0; i<footprint.polygon.points.size(); i++)
     {
         geometry_msgs::Polygon triangle;
         triangle.points.push_back(state_point);
-        triangle.points.push_back(robot_footprint.polygon.points[i]);
+        triangle.points.push_back(footprint.polygon.points[i]);
 
-        if(i != robot_footprint.polygon.points.size()-1)
-            triangle.points.push_back(robot_footprint.polygon.points[i+1]);
+        if(i != footprint.polygon.points.size()-1)
+            triangle.points.push_back(footprint.polygon.points[i+1]);
         else
-            triangle.points.push_back(robot_footprint.polygon.points[0]);
+            triangle.points.push_back(footprint.polygon.points[0]);
 
         if(is_inside_of_triangle(obstacle.position, triangle))
             return true;
@@ -226,7 +226,7 @@ bool PointFollowPlanner::is_inside_of_robot(const geometry_msgs::Pose& obstacle,
 }
 
 
-bool PointFollowPlanner::is_hit_obstacle(const std::vector<State>& traj)
+bool PointFollowPlanner::check_collision(const std::vector<State>& traj)
 {
     for(const auto& state : traj)
         for (const auto& obs : obs_list_.poses)
@@ -306,7 +306,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         }
 
         // judge safety trajectory
-        if(!is_hit_obstacle(traj))
+        if(!check_collision(traj))
         {
             optimal_traj = traj;
             is_found_safety_traj = true;
@@ -326,8 +326,8 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     }
 
     visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
-    visualize_trajectory(optimal_traj, 1.0, 0.0, 0.0, selected_trajectory_pub_);
-    predict_robot_footprint_pub_.publish(move_footprint(optimal_traj.back()));
+    visualize_trajectory(optimal_traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+    predict_footprint_pub_.publish(transform_footprint(optimal_traj.back()));
 
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x  = optimal_traj[0].velocity_;
@@ -340,7 +340,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
 geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 {
     const Window dynamic_window = calc_dynamic_window(current_velocity_);
-    const Eigen::Vector3d goal(local_goal_.pose.position.x, local_goal_.pose.position.y, tf::getYaw(local_goal_.pose.orientation));
+    const Eigen::Vector3d goal(goal_.pose.position.x, goal_.pose.position.y, tf::getYaw(goal_.pose.orientation));
 
     return planning(dynamic_window, goal);
 }
@@ -348,13 +348,13 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 
 bool PointFollowPlanner::can_move()
 {
-    if(!local_goal_subscribed_) ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
-    if(!robot_footprint_subscribed_) ROS_WARN_THROTTLE(1.0, "Robot footprint has not been updated");
+    if(!goal_subscribed_) ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
+    if(!footprint_subscribed_) ROS_WARN_THROTTLE(1.0, "Footprint has not been updated");
     if(!local_map_updated_) ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
     if(!odom_updated_) ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
 
-    if(local_goal_subscribed_
-        and robot_footprint_subscribed_
+    if(goal_subscribed_
+        and footprint_subscribed_
         and local_map_updated_
         and odom_updated_)
         return true;
@@ -371,7 +371,7 @@ void PointFollowPlanner::process()
     {
         geometry_msgs::Twist cmd_vel;
         if(can_move()) cmd_vel = calc_cmd_vel();
-        velocity_pub_.publish(cmd_vel);
+        cmd_vel_pub_.publish(cmd_vel);
 
         odom_updated_ = false;
         local_map_updated_ = false;
