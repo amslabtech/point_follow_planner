@@ -1,42 +1,51 @@
 <?xml version="1.0"?>
 <launch>
     <!-- bagfile path -->
-    <!-- <arg name="bagfile" default="/home/username/~.bag"/> -->
-    <arg name="bagfile" default="/home/amsl/bagfiles/rwrc23/rwrc23_main_2023-08-15-22-51-39.bag"/>
+    <!-- <arg name="bagfile" default="$(env HOME)/bagfiles/~.bag"/> -->
+    <arg name="bagfile" default="$(env HOME)/bagfiles/rwrc23/rwrc23_main_2023-08-15-22-51-39.bag"/>
 
     <!-- param -->
     <arg name="hz" default="8"/>
+    <arg name="planner_param" default="$(find point_follow_planner)/config/planner_param.yaml"/>
+    <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
+    <!-- topic name -->
     <arg name="cmd_vel" default="/cmd_vel"/>
     <arg name="candidate_trajectories" default="/candidate_trajectories"/>
-    <arg name="selected_trajectory" default="/selected_trajectory"/>
+    <arg name="best_trajectory" default="/best_trajectory"/>
     <arg name="local_goal" default="/local_goal"/>
-    <arg name="robot_footprint" default="/robot_footprint"/>
+    <arg name="footprint" default="/footprint"/>
     <!-- <arg name="local_map" default="/local_map"/> -->
     <arg name="local_map" default="/local_map/expand"/>
     <arg name="odom" default="/odom"/>
+    <arg name="predict_footprint" default="/predict_footprint"/>
 
 
     <rosparam param="/use_sim_time">true</rosparam>
 
     <include file="$(find point_follow_planner)/launch/local_planner.launch">
+        <!-- param -->
         <arg name="hz" value="$(arg hz)"/>
+        <arg name="planner_param" value="$(arg planner_param)"/>
+        <arg name="robot_param" value="$(arg robot_param)"/>
+        <!-- topic name -->
         <arg name="cmd_vel" value="$(arg cmd_vel)"/>
         <arg name="candidate_trajectories" value="$(arg candidate_trajectories)"/>
-        <arg name="selected_trajectory" value="$(arg selected_trajectory)"/>
+        <arg name="best_trajectory" value="$(arg best_trajectory)"/>
         <arg name="local_goal" value="$(arg local_goal)"/>
-        <arg name="robot_footprint" value="$(arg robot_footprint)"/>
+        <arg name="footprint" value="$(arg footprint)"/>
         <arg name="local_map" value="$(arg local_map)"/>
         <arg name="odom" value="$(arg odom)"/>
+        <arg name="predict_footprint" value="$(arg predict_footprint)"/>
     </include>
 
     <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="
         $(arg bagfile)
         --clock
         --topics
-        /local_goal
-        /local_map/expand
-        /odom
-        /robot_footprint
+        $(arg local_goal)
+        $(arg local_map)
+        $(arg odom)
+        $(arg footprint)
         /tf
         /tf_static
         ">
