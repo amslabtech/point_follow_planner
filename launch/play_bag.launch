@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <!-- bagfile path -->
-    <!-- <arg name="bagfile" default="$(env HOME)/bagfiles/~.bag"/> -->
-    <arg name="bagfile" default="$(env HOME)/bagfiles/rwrc23/rwrc23_main_2023-08-15-22-51-39.bag"/>
+    <arg name="bagfile" default="$(env HOME)/bagfiles/~.bag"/>
 
     <!-- param -->
     <arg name="hz" default="8"/>
@@ -14,8 +13,7 @@
     <arg name="best_trajectory" default="/best_trajectory"/>
     <arg name="local_goal" default="/local_goal"/>
     <arg name="footprint" default="/footprint"/>
-    <!-- <arg name="local_map" default="/local_map"/> -->
-    <arg name="local_map" default="/local_map/expand"/>
+    <arg name="local_map" default="/local_map"/>
     <arg name="odom" default="/odom"/>
     <arg name="predict_footprint" default="/predict_footprint"/>
 
