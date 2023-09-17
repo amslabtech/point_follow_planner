@@ -238,6 +238,8 @@ void PointFollowPlanner::motion(State& state, const double velocity, const doubl
 
 geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, const Eigen::Vector3d goal)
 {
+    std::vector<std::vector<State>> trajectories;
+
     const double angle_to_goal = atan2(goal.y(), goal.x());
     if(angle_to_goal_th_ < fabs(angle_to_goal))
     {
@@ -256,6 +258,8 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         // judge safety trajectory
         if(!check_collision(traj))
         {
+            trajectories.push_back(traj);
+            visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
             visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
             predict_footprint_pub_.publish(transform_footprint(traj.back()));
             return cmd_vel;
@@ -263,7 +267,6 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     }
 
     float min_cost = 1e6;
-    std::vector<std::vector<State>> trajectories;
     double optimal_velocity;
     double optimal_yawrate;
 
