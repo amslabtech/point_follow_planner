@@ -57,6 +57,21 @@ protected:
     // others
     void motion(State& state, const double velocity, const double yawrate);
     void raycast(const nav_msgs::OccupancyGrid& map);
+    void generate_trajectory(std::vector<State>& trajectory, const double velocity, const double yawrate);
+    void push_back_trajectory(std::vector<std::vector<State>>& trajectories, const double velocity, const double yawrate);
+    void search_optimal_cmd_vel_for_goal(
+            double& optimal_velocity,
+            double& optimal_yawrate,
+            const Window dynamic_window,
+            const Eigen::Vector3d& goal,
+            std::vector<std::vector<State>>& trajectories);
+    void search_safety_trajectory(
+            std::vector<State>& optimal_traj,
+            const double optimal_velocity,
+            const double optimal_yawrate,
+            const Window dynamic_window,
+            const Eigen::Vector3d& goal,
+            std::vector<std::vector<State>>& trajectories);
     bool can_move();
     bool check_collision(const std::vector<State>& traj);
     bool is_inside_of_triangle(const geometry_msgs::Point& target_point, const geometry_msgs::Polygon& triangle);
@@ -67,8 +82,19 @@ protected:
     geometry_msgs::Twist calc_cmd_vel();
     Window calc_dynamic_window(const geometry_msgs::Twist& current_velocity);
 
-    void visualize_trajectory(const std::vector<State>& trajectory, const double r, const double g, const double b, const ros::Publisher& pub);
-    void visualize_trajectories(const std::vector<std::vector<State>>& trajectories, const double r, const double g, const double b, const int trajectories_size, const ros::Publisher& pub);
+    void visualize_trajectory(
+            const std::vector<State>& trajectory,
+            const double r,
+            const double g,
+            const double b,
+            const ros::Publisher& pub);
+    void visualize_trajectories(
+            const std::vector<std::vector<State>>& trajectories,
+            const double r,
+            const double g,
+            const double b,
+            const int trajectories_size,
+            const ros::Publisher& pub);
 
 
     // param

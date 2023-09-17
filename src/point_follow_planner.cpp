@@ -236,63 +236,48 @@ void PointFollowPlanner::motion(State& state, const double velocity, const doubl
 }
 
 
-geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, const Eigen::Vector3d goal)
+void PointFollowPlanner::generate_trajectory(std::vector<State>& trajectory, const double velocity, const double yawrate)
 {
-    std::vector<std::vector<State>> trajectories;
-
-    const double angle_to_goal = atan2(goal.y(), goal.x());
-    if(angle_to_goal_th_ < fabs(angle_to_goal))
-    {
-        geometry_msgs::Twist cmd_vel;
-        cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
-
-        // predict robot motion
         State state;
-        std::vector<State> traj;
         for(float t=0; t<=predict_time_; t+=dt_)
         {
-            motion(state, cmd_vel.linear.x, cmd_vel.angular.z);
-            traj.push_back(state);
+            motion(state, velocity, yawrate);
+            trajectory.push_back(state);
         }
+}
 
-        // judge safety trajectory
-        if(!check_collision(traj))
-        {
-            trajectories.push_back(traj);
-            visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
-            visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
-            predict_footprint_pub_.publish(transform_footprint(traj.back()));
-            return cmd_vel;
-        }
-    }
 
+void PointFollowPlanner::push_back_trajectory(std::vector<std::vector<State>>& trajectories, const double velocity, const double yawrate)
+{
+    std::vector<State> traj;
+    generate_trajectory(traj, velocity, yawrate);
+    trajectories.push_back(traj);
+}
+
+
+void PointFollowPlanner::search_optimal_cmd_vel_for_goal(
+        double& optimal_velocity,
+        double& optimal_yawrate,
+        const Window dynamic_window,
+        const Eigen::Vector3d& goal,
+        std::vector<std::vector<State>>& trajectories)
+{
     float min_cost = 1e6;
-    double optimal_velocity;
-    double optimal_yawrate;
-
-    // search optimal yawrate
     const double velocity_resolution = (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / velocity_samples_;
     const double yawrate_resolution = (dynamic_window.max_yawrate_ - dynamic_window.min_yawrate_) / yawrate_samples_;
+
     for(double velocity=dynamic_window.min_velocity_; velocity<=dynamic_window.max_velocity_; velocity+=velocity_resolution)
     {
         if(velocity < velocity_resolution) continue;
         for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution)
         {
-            State state;
-            std::vector<State> traj;
-
             // predict robot motion
-            for(float t=0; t<=predict_time_; t+=dt_)
-            {
-                motion(state, velocity, yawrate);
-                traj.push_back(state);
-            }
-            trajectories.push_back(traj);
+            push_back_trajectory(trajectories, velocity, yawrate);
 
             // calc goal cost
-            const double goal_cost = calc_goal_cost(traj, goal);
+            const double goal_cost = calc_goal_cost(trajectories.back(), goal);
 
-            // update min cost & optimal yawrate
+            // update min cost & optimal cmd vel
             if(goal_cost <= min_cost)
             {
                 min_cost  = goal_cost;
@@ -303,21 +288,13 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
 
         if (dynamic_window.min_velocity_ < 0.0 and 0.0 < dynamic_window.max_velocity_)
         {
-            State state;
-            std::vector<State> traj;
-
             // predict robot motion
-            for(float t=0; t<=predict_time_; t+=dt_)
-            {
-                motion(state, velocity, 0.0);
-                traj.push_back(state);
-            }
-            trajectories.push_back(traj);
+            push_back_trajectory(trajectories, velocity, 0.0);
 
             // calc goal cost
-            const double goal_cost = calc_goal_cost(traj, goal);
+            const double goal_cost = calc_goal_cost(trajectories.back(), goal);
 
-            // update min cost & optimal yawrate
+            // update min cost & optimal cmd vel
             if(goal_cost <= min_cost)
             {
                 min_cost  = goal_cost;
@@ -326,27 +303,31 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
             }
         }
     }
+}
 
-    // search safety trajectory
-    std::vector<State> optimal_traj;
+
+void PointFollowPlanner::search_safety_trajectory(
+        std::vector<State>& optimal_traj,
+        const double optimal_velocity,
+        const double optimal_yawrate,
+        const Window dynamic_window,
+        const Eigen::Vector3d& goal,
+        std::vector<std::vector<State>>& trajectories)
+{
     bool is_found_safety_traj = false;
+    const double velocity_resolution = (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / velocity_samples_;
+
     for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution)
     {
         if(velocity < velocity_resolution) continue;
-        State state;
-        std::vector<State> traj;
 
         // predict robot motion
-        for(float t=0; t<=predict_time_; t+=dt_)
-        {
-            motion(state, velocity, optimal_yawrate);
-            traj.push_back(state);
-        }
+        push_back_trajectory(trajectories, velocity, optimal_yawrate);
 
         // judge safety trajectory
-        if(!check_collision(traj))
+        if(!check_collision(trajectories.back()))
         {
-            optimal_traj = traj;
+            optimal_traj = trajectories.back();
             is_found_safety_traj = true;
         }
         else
@@ -362,6 +343,42 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         traj.push_back(state);
         optimal_traj = traj;
     }
+}
+
+
+geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, const Eigen::Vector3d goal)
+{
+    std::vector<std::vector<State>> trajectories;
+
+    const double angle_to_goal = atan2(goal.y(), goal.x());
+    if(angle_to_goal_th_ < fabs(angle_to_goal))
+    {
+        geometry_msgs::Twist cmd_vel;
+        cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
+
+        // predict robot motion
+        std::vector<State> traj;
+        generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
+
+        // judge safety trajectory
+        if(!check_collision(traj))
+        {
+            trajectories.push_back(traj);
+            visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
+            visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+            predict_footprint_pub_.publish(transform_footprint(traj.back()));
+            return cmd_vel;
+        }
+    }
+
+    // search optimal cmd vel for goal
+    double optimal_velocity;
+    double optimal_yawrate;
+    search_optimal_cmd_vel_for_goal(optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+
+    // search safety trajectory
+    std::vector<State> optimal_traj;
+    search_safety_trajectory(optimal_traj, optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
 
     visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
     visualize_trajectory(optimal_traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
@@ -419,7 +436,12 @@ void PointFollowPlanner::process()
 }
 
 
-void PointFollowPlanner::visualize_trajectory(const std::vector<State>& trajectory, const double r, const double g, const double b, const ros::Publisher& pub)
+void PointFollowPlanner::visualize_trajectory(
+        const std::vector<State>& trajectory,
+        const double r,
+        const double g,
+        const double b,
+        const ros::Publisher& pub)
 {
     visualization_msgs::Marker v_trajectory;
     v_trajectory.header.frame_id = robot_frame_;
@@ -449,7 +471,13 @@ void PointFollowPlanner::visualize_trajectory(const std::vector<State>& trajecto
 }
 
 
-void PointFollowPlanner::visualize_trajectories(const std::vector<std::vector<State>>& trajectories, const double r, const double g, const double b, const int trajectories_size, const ros::Publisher& pub)
+void PointFollowPlanner::visualize_trajectories(
+        const std::vector<std::vector<State>>& trajectories,
+        const double r,
+        const double g,
+        const double b,
+        const int trajectories_size,
+        const ros::Publisher& pub)
 {
     visualization_msgs::MarkerArray v_trajectories;
     int count = 0;
