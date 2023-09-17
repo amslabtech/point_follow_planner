@@ -27,8 +27,7 @@ protected:
     class State
     {
     public:
-        State(const double, const double, const double, const double, const double);
-
+        State(void);
         double x_;
         double y_;
         double yaw_;
@@ -40,7 +39,6 @@ protected:
     class Window
     {
     public:
-        Window(void);
         Window(const double, const double, const double, const double);
         double min_velocity_;
         double max_velocity_;
@@ -85,7 +83,6 @@ protected:
     double max_yawrate_in_situ_turns_;
     double max_acceleration_;
     double max_d_yawrate_;
-    double max_dist_;
     double velocity_resolution_;
     double yawrate_resolution_;
     double angle_resolution_;

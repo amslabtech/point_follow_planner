@@ -1,5 +1,4 @@
 #include "point_follow_planner/point_follow_planner.h"
-#include <string>
 
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
@@ -12,7 +11,6 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("max_yawrate_in_situ_turns", max_yawrate_in_situ_turns_, max_yawrate_);
     private_nh_.param<double>("max_acceleration", max_acceleration_, {1.0});
     private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {2.0});
-    private_nh_.param<double>("max_dist", max_dist_, {10.0});
     private_nh_.param<double>("velocity_resolution", velocity_resolution_, {0.1});
     private_nh_.param<double>("yawrate_resolution", yawrate_resolution_, {0.1});
     private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
@@ -30,7 +28,6 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
     ROS_INFO_STREAM("max_acceleration: " << max_acceleration_);
     ROS_INFO_STREAM("max_d_yawrate: " << max_d_yawrate_);
-    ROS_INFO_STREAM("max_dist: " << max_dist_);
     ROS_INFO_STREAM("velocity_resolution: " << velocity_resolution_);
     ROS_INFO_STREAM("yawrate_resolution: " << yawrate_resolution_);
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
@@ -49,14 +46,8 @@ PointFollowPlanner::PointFollowPlanner(void)
 }
 
 
-PointFollowPlanner::State::State(const double x, const double y, const double yaw, const double velocity, const double yawrate)
-    :x_(x), y_(y), yaw_(yaw), velocity_(velocity), yawrate_(yawrate)
-{
-}
-
-
-PointFollowPlanner::Window::Window(void)
-    :min_velocity_(0.0), max_velocity_(0.0), min_yawrate_(0.0), max_yawrate_(0.0)
+PointFollowPlanner::State::State(void)
+    :x_(0.0), y_(0.0), yaw_(0.0), velocity_(0.0), yawrate_(0.0)
 {
 }
 
@@ -257,7 +248,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
 
         // predict robot motion
-        State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
+        State state;
         std::vector<State> traj;
         for(float t=0; t<=predict_time_; t+=dt_)
         {
@@ -285,7 +276,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution_)
         {
             if(velocity < velocity_resolution_) continue;
-            State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
+            State state;
             std::vector<State> traj;
 
             // predict robot motion
@@ -315,7 +306,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution_)
     {
         if(velocity < velocity_resolution_) continue;
-        State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
+        State state;
         std::vector<State> traj;
 
         // predict robot motion
@@ -339,8 +330,8 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
 
     if(!is_found_safety_traj)
     {
+        State state;
         std::vector<State> traj;
-        State state(0.0, 0.0, 0.0, 0.0, 0.0);
         traj.push_back(state);
         optimal_traj = traj;
     }
