@@ -58,16 +58,6 @@ Visualization Manager:
       Reference Frame: base_link
       Show Trail: false
       Value: true
-    - Alpha: 0.699999988079071
-      Class: rviz/Map
-      Color Scheme: map
-      Draw Behind: false
-      Enabled: true
-      Name: LocalMap
-      Topic: /local_map/expand
-      Unreliable: false
-      Use Timestamp: false
-      Value: true
     - Alpha: 1
       Axes Length: 1
       Axes Radius: 0.10000000149011612
@@ -84,6 +74,16 @@ Visualization Manager:
       Topic: /local_goal
       Unreliable: false
       Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: LocalMap
+      Topic: /local_map/expand
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
     - Alpha: 1
       Class: rviz/Polygon
       Color: 25; 255; 0
@@ -93,22 +93,6 @@ Visualization Manager:
       Topic: /footprint
       Unreliable: false
       Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /local_planner/point_follow_planner/candidate_trajectories
-      Name: CandidatePath
-      Namespaces:
-        /local_planner/point_follow_planner/candidate_trajectories: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /local_planner/point_follow_planner/best_trajectory
-      Name: BestPath
-      Namespaces:
-        /local_planner/point_follow_planner/best_trajectory: true
-      Queue Size: 100
-      Value: true
     - Alpha: 1
       Class: rviz/Polygon
       Color: 0; 63; 252
@@ -117,6 +101,22 @@ Visualization Manager:
       Queue Size: 10
       Topic: /local_planner/point_follow_planner/predict_footprint
       Unreliable: false
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /local_planner/point_follow_planner/best_trajectory
+      Name: BestPath
+      Namespaces:
+        /local_planner/point_follow_planner/best_trajectory: true
+      Queue Size: 1
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /local_planner/point_follow_planner/candidate_trajectories
+      Name: CandidatePath
+      Namespaces:
+        /local_planner/point_follow_planner/candidate_trajectories: true
+      Queue Size: 1
       Value: true
   Enabled: true
   Global Options:
