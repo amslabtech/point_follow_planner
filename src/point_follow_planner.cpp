@@ -255,7 +255,23 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     {
         geometry_msgs::Twist cmd_vel;
         cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
-        return cmd_vel;
+
+        // predict robot motion
+        State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
+        std::vector<State> traj;
+        for(float t=0; t<=predict_time_; t+=dt_)
+        {
+            motion(state, cmd_vel.linear.x, cmd_vel.angular.z);
+            traj.push_back(state);
+        }
+
+        // judge safety trajectory
+        if(!check_collision(traj))
+        {
+            visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+            predict_footprint_pub_.publish(transform_footprint(traj.back()));
+            return cmd_vel;
+        }
     }
 
     float min_cost = 1e6;
