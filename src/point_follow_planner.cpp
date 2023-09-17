@@ -1,22 +1,23 @@
 #include "point_follow_planner/point_follow_planner.h"
+#include <string>
 
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
 {
-    private_nh_.param("hz", hz_, {10});
-    private_nh_.param("robot_frame", robot_frame_, {"base_link"});
-    private_nh_.param("max_velocity", max_velocity_, {1.0});
-    private_nh_.param("min_velocity", min_velocity_, {0.0});
-    private_nh_.param("max_yawrate", max_yawrate_, {0.8});
-    private_nh_.param("max_yawrate_in_situ_turns", max_yawrate_in_situ_turns_, max_yawrate_);
-    private_nh_.param("max_acceleration", max_acceleration_, {1.0});
-    private_nh_.param("max_d_yawrate", max_d_yawrate_, {2.0});
-    private_nh_.param("max_dist", max_dist_, {10.0});
-    private_nh_.param("velocity_resolution", velocity_resolution_, {0.1});
-    private_nh_.param("yawrate_resolution", yawrate_resolution_, {0.1});
-    private_nh_.param("angle_resolution", angle_resolution_, {0.2});
-    private_nh_.param("predict_time", predict_time_, {3.0});
-    private_nh_.param("angle_to_goal_th", angle_to_goal_th_, {0.26});
+    private_nh_.param<double>("hz", hz_, {10});
+    private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
+    private_nh_.param<double>("max_velocity", max_velocity_, {1.0});
+    private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
+    private_nh_.param<double>("max_yawrate", max_yawrate_, {0.8});
+    private_nh_.param<double>("max_yawrate_in_situ_turns", max_yawrate_in_situ_turns_, max_yawrate_);
+    private_nh_.param<double>("max_acceleration", max_acceleration_, {1.0});
+    private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {2.0});
+    private_nh_.param<double>("max_dist", max_dist_, {10.0});
+    private_nh_.param<double>("velocity_resolution", velocity_resolution_, {0.1});
+    private_nh_.param<double>("yawrate_resolution", yawrate_resolution_, {0.1});
+    private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
+    private_nh_.param<double>("predict_time", predict_time_, {3.0});
+    private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
 
     dt_ = 1.0 / hz_;
 
