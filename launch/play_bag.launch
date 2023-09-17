@@ -9,13 +9,10 @@
     <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
     <!-- topic name -->
     <arg name="cmd_vel" default="/cmd_vel"/>
-    <arg name="candidate_trajectories" default="/candidate_trajectories"/>
-    <arg name="best_trajectory" default="/best_trajectory"/>
-    <arg name="local_goal" default="/local_goal"/>
     <arg name="footprint" default="/footprint"/>
+    <arg name="local_goal" default="/local_goal"/>
     <arg name="local_map" default="/local_map"/>
     <arg name="odom" default="/odom"/>
-    <arg name="predict_footprint" default="/predict_footprint"/>
 
 
     <rosparam param="/use_sim_time">true</rosparam>
@@ -27,23 +24,20 @@
         <arg name="robot_param" value="$(arg robot_param)"/>
         <!-- topic name -->
         <arg name="cmd_vel" value="$(arg cmd_vel)"/>
-        <arg name="candidate_trajectories" value="$(arg candidate_trajectories)"/>
-        <arg name="best_trajectory" value="$(arg best_trajectory)"/>
-        <arg name="local_goal" value="$(arg local_goal)"/>
         <arg name="footprint" value="$(arg footprint)"/>
+        <arg name="local_goal" value="$(arg local_goal)"/>
         <arg name="local_map" value="$(arg local_map)"/>
         <arg name="odom" value="$(arg odom)"/>
-        <arg name="predict_footprint" value="$(arg predict_footprint)"/>
     </include>
 
     <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="
         $(arg bagfile)
         --clock
         --topics
+        $(arg footprint)
         $(arg local_goal)
         $(arg local_map)
         $(arg odom)
-        $(arg footprint)
         /tf
         /tf_static
         ">
