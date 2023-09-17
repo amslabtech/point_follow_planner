@@ -3,35 +3,32 @@
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
 {
-    private_nh_.param<double>("hz", hz_, {10});
+    private_nh_.param<double>("hz", hz_, {20});
     private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
-    private_nh_.param<double>("max_velocity", max_velocity_, {1.0});
+    private_nh_.param<double>("max_velocity", max_velocity_, {0.55});
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
-    private_nh_.param<double>("max_yawrate", max_yawrate_, {0.8});
+    private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
     private_nh_.param<double>("max_yawrate_in_situ_turns", max_yawrate_in_situ_turns_, max_yawrate_);
     private_nh_.param<double>("max_acceleration", max_acceleration_, {1.0});
-    private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {2.0});
-    private_nh_.param<double>("velocity_resolution", velocity_resolution_, {0.1});
-    private_nh_.param<double>("yawrate_resolution", yawrate_resolution_, {0.1});
+    private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {3.2});
     private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
     private_nh_.param<double>("predict_time", predict_time_, {3.0});
+    private_nh_.param<double>("dt", dt_, {0.1});
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
-
-    dt_ = 1.0 / hz_;
+    private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
+    private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
 
     ROS_INFO("=== Point Followe Planner ===");
     ROS_INFO_STREAM("hz: " << hz_);
-    ROS_INFO_STREAM("dt: " << dt_);
     ROS_INFO_STREAM("robot_frame: " << robot_frame_);
     ROS_INFO_STREAM("max_velocity: " << max_velocity_);
     ROS_INFO_STREAM("min_velocity: " << min_velocity_);
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
     ROS_INFO_STREAM("max_acceleration: " << max_acceleration_);
     ROS_INFO_STREAM("max_d_yawrate: " << max_d_yawrate_);
-    ROS_INFO_STREAM("velocity_resolution: " << velocity_resolution_);
-    ROS_INFO_STREAM("yawrate_resolution: " << yawrate_resolution_);
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
     ROS_INFO_STREAM("predict_time: " << predict_time_);
+    ROS_INFO_STREAM("dt: " << dt_);
     ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
 
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -271,11 +268,13 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     double optimal_yawrate;
 
     // search optimal yawrate
-    for(double velocity=dynamic_window.min_velocity_; velocity<=dynamic_window.max_velocity_; velocity+=velocity_resolution_)
+    const double velocity_resolution = (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / velocity_samples_;
+    const double yawrate_resolution = (dynamic_window.max_yawrate_ - dynamic_window.min_yawrate_) / yawrate_samples_;
+    for(double velocity=dynamic_window.min_velocity_; velocity<=dynamic_window.max_velocity_; velocity+=velocity_resolution)
     {
-        for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution_)
+        if(velocity < velocity_resolution) continue;
+        for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution)
         {
-            if(velocity < velocity_resolution_) continue;
             State state;
             std::vector<State> traj;
 
@@ -298,14 +297,39 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
                 optimal_yawrate = yawrate;
             }
         }
+
+        if (dynamic_window.min_velocity_ < 0.0 and 0.0 < dynamic_window.max_velocity_)
+        {
+            State state;
+            std::vector<State> traj;
+
+            // predict robot motion
+            for(float t=0; t<=predict_time_; t+=dt_)
+            {
+                motion(state, velocity, 0.0);
+                traj.push_back(state);
+            }
+            trajectories.push_back(traj);
+
+            // calc goal cost
+            const double goal_cost = calc_goal_cost(traj, goal);
+
+            // update min cost & optimal yawrate
+            if(goal_cost <= min_cost)
+            {
+                min_cost  = goal_cost;
+                optimal_velocity = velocity;
+                optimal_yawrate = 0.0;
+            }
+        }
     }
 
     // search safety trajectory
     std::vector<State> optimal_traj;
     bool is_found_safety_traj = false;
-    for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution_)
+    for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution)
     {
-        if(velocity < velocity_resolution_) continue;
+        if(velocity < velocity_resolution) continue;
         State state;
         std::vector<State> traj;
 
