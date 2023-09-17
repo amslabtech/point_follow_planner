@@ -4,7 +4,7 @@
     <arg name="bagfile" default="$(env HOME)/bagfiles/~.bag"/>
 
     <!-- param -->
-    <arg name="hz" default="8"/>
+    <arg name="hz" default="20"/>
     <arg name="planner_param" default="$(find point_follow_planner)/config/planner_param.yaml"/>
     <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
     <!-- topic name -->

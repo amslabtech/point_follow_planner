@@ -76,6 +76,8 @@ protected:
     bool footprint_subscribed_;
     bool odom_updated_;
     bool local_map_updated_;
+    int velocity_samples_;
+    int yawrate_samples_;
     double hz_;
     double max_velocity_;
     double min_velocity_;
@@ -83,8 +85,6 @@ protected:
     double max_yawrate_in_situ_turns_;
     double max_acceleration_;
     double max_d_yawrate_;
-    double velocity_resolution_;
-    double yawrate_resolution_;
     double angle_resolution_;
     double predict_time_;
     double dt_;
@@ -98,10 +98,10 @@ protected:
     ros::Publisher candidate_trajectories_pub_;
     ros::Publisher best_trajectory_pub_;
     ros::Publisher predict_footprint_pub_;
-    ros::Subscriber local_map_sub_;
-    ros::Subscriber goal_sub_;
-    ros::Subscriber odom_sub_;
     ros::Subscriber footprint_sub_;
+    ros::Subscriber goal_sub_;
+    ros::Subscriber local_map_sub_;
+    ros::Subscriber odom_sub_;
 
     geometry_msgs::PoseStamped goal_;
     geometry_msgs::PoseArray obs_list_;
