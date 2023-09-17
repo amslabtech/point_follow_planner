@@ -217,7 +217,7 @@ bool PointFollowPlanner::is_inside_of_robot(const geometry_msgs::Pose& obstacle,
         if(i != footprint.polygon.points.size()-1)
             triangle.points.push_back(footprint.polygon.points[i+1]);
         else
-            triangle.points.push_back(footprint.polygon.points[0]);
+            triangle.points.push_back(footprint.polygon.points.front());
 
         if(is_inside_of_triangle(obstacle.position, triangle))
             return true;
@@ -260,6 +260,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
 
     float min_cost = 1e6;
     std::vector<std::vector<State>> trajectories;
+    double optimal_velocity;
     double optimal_yawrate;
 
     // search optimal yawrate
@@ -286,6 +287,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
             if(goal_cost <= min_cost)
             {
                 min_cost  = goal_cost;
+                optimal_velocity = velocity;
                 optimal_yawrate = yawrate;
             }
         }
@@ -294,8 +296,9 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     // search safety trajectory
     std::vector<State> optimal_traj;
     bool is_found_safety_traj = false;
-    for(double velocity=dynamic_window.min_velocity_; velocity<=dynamic_window.max_velocity_; velocity+=velocity_resolution_)
+    for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution_)
     {
+        if(velocity < velocity_resolution_) continue;
         State state(0.0, 0.0, 0.0, current_velocity_.linear.x, current_velocity_.angular.z);
         std::vector<State> traj;
 
@@ -331,8 +334,8 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     predict_footprint_pub_.publish(transform_footprint(optimal_traj.back()));
 
     geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x  = optimal_traj[0].velocity_;
-    cmd_vel.angular.z = optimal_traj[0].yawrate_;
+    cmd_vel.linear.x  = optimal_traj.front().velocity_;
+    cmd_vel.angular.z = optimal_traj.front().yawrate_;
 
     return cmd_vel;
 }
