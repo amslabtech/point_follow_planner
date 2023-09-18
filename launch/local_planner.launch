@@ -7,7 +7,7 @@
     <arg name="planner_param" default="$(find point_follow_planner)/config/planner_param.yaml"/>
     <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
     <!-- topic name -->
-    <arg name="cmd_vel" default="/cmd_vel"/>
+    <arg name="cmd_vel" default="/local_path/cmd_vel"/>
     <arg name="footprint" default="/footprint"/>
     <arg name="local_goal" default="/local_goal"/>
     <arg name="local_map" default="/local_map"/>
