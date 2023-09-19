@@ -87,6 +87,7 @@ void PointFollowPlanner::local_map_callback(const nav_msgs::OccupancyGridConstPt
 void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 {
     current_velocity_ = msg->twist.twist;
+    if(current_velocity_.linear.x < 0.0) current_velocity_.linear.x = 0.0;
     odom_updated_ = true;
 }
 
@@ -268,7 +269,6 @@ void PointFollowPlanner::search_optimal_cmd_vel_for_goal(
 
     for(double velocity=dynamic_window.min_velocity_; velocity<=dynamic_window.max_velocity_; velocity+=velocity_resolution)
     {
-        if(velocity < velocity_resolution) continue;
         for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution)
         {
             // predict robot motion
@@ -319,8 +319,6 @@ void PointFollowPlanner::search_safety_trajectory(
 
     for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution)
     {
-        if(velocity < velocity_resolution) continue;
-
         // predict robot motion
         push_back_trajectory(trajectories, velocity, optimal_yawrate);
 
