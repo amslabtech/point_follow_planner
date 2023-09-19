@@ -40,6 +40,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::goal_callback, this);
     local_map_sub_ = nh_.subscribe("/local_map", 1, &PointFollowPlanner::local_map_callback, this);
     odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
+    target_velocity_sub_ = nh_.subscribe("/target_velocity", 1, &PointFollowPlanner::target_velocity_callback, this);
 }
 
 
@@ -89,6 +90,13 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
     current_velocity_ = msg->twist.twist;
     if(current_velocity_.linear.x < 0.0) current_velocity_.linear.x = 0.0;
     odom_updated_ = true;
+}
+
+
+void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
+{
+    max_velocity_ = msg->linear.x;
+    ROS_WARN_STREAM("target velocity was updated to " << max_velocity_ << "[m/s]");
 }
 
 
