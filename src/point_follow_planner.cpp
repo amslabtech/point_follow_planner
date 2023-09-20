@@ -5,6 +5,7 @@ PointFollowPlanner::PointFollowPlanner(void)
 {
     private_nh_.param<double>("hz", hz_, {20});
     private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
+    private_nh_.param<double>("target_velocity", target_velocity_, {0.55});
     private_nh_.param<double>("max_velocity", max_velocity_, {0.55});
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
@@ -40,6 +41,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::goal_callback, this);
     local_map_sub_ = nh_.subscribe("/local_map", 1, &PointFollowPlanner::local_map_callback, this);
     odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
+    target_velocity_sub_ = nh_.subscribe("/target_velocity", 1, &PointFollowPlanner::target_velocity_callback, this);
 }
 
 
@@ -92,6 +94,16 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 }
 
 
+void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
+{
+    target_velocity_ = std::min(msg->linear.x, max_velocity_);
+    ROS_WARN_THROTTLE(1.0, "");
+    ROS_WARN_THROTTLE(1.0, "===");
+    ROS_WARN_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
+    ROS_WARN_THROTTLE(1.0, "===\n");
+}
+
+
 void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid& map)
 {
     obs_list_.poses.clear();
@@ -124,7 +136,7 @@ PointFollowPlanner::Window PointFollowPlanner::calc_dynamic_window(const geometr
 {
     Window window(min_velocity_, max_velocity_, -max_yawrate_, max_yawrate_);
     window.min_velocity_ = std::max((current_velocity.linear.x - max_acceleration_*dt_), min_velocity_);
-    window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_*dt_), max_velocity_);
+    window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_*dt_), target_velocity_);
     window.min_yawrate_  = std::max((current_velocity.angular.z - max_d_yawrate_*dt_), -max_yawrate_);
     window.max_yawrate_  = std::min((current_velocity.angular.z + max_d_yawrate_*dt_),  max_yawrate_);
 
@@ -239,6 +251,7 @@ void PointFollowPlanner::motion(State& state, const double velocity, const doubl
 
 void PointFollowPlanner::generate_trajectory(std::vector<State>& trajectory, const double velocity, const double yawrate)
 {
+        trajectory.clear();
         State state;
         for(float t=0; t<=predict_time_; t+=dt_)
         {
@@ -334,20 +347,16 @@ void PointFollowPlanner::search_safety_trajectory(
         }
     }
 
-    if(!is_found_safety_traj)
-    {
-        State state;
-        std::vector<State> traj;
-        traj.push_back(state);
-        optimal_traj = traj;
-    }
+    if(!is_found_safety_traj) generate_trajectory(optimal_traj, 0.0, 0.0);
 }
 
 
 geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, const Eigen::Vector3d goal)
 {
     std::vector<std::vector<State>> trajectories;
+    std::vector<State> traj;
 
+    // turning in place
     const double angle_to_goal = atan2(goal.y(), goal.x());
     if(angle_to_goal_th_ < fabs(angle_to_goal))
     {
@@ -355,7 +364,6 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
 
         // predict robot motion
-        std::vector<State> traj;
         generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
 
         // judge safety trajectory
@@ -369,22 +377,26 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         }
     }
 
-    // search optimal cmd vel for goal
-    double optimal_velocity;
-    double optimal_yawrate;
-    search_optimal_cmd_vel_for_goal(optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+    // planing
+    geometry_msgs::Twist cmd_vel;
+    if(fabs(dynamic_window.max_velocity_) < DBL_EPSILON)
+    {
+        generate_trajectory(traj, 0.0, 0.0);
+        trajectories.push_back(traj);
+    }
+    else
+    {
+        double optimal_velocity, optimal_yawrate;
+        search_optimal_cmd_vel_for_goal(optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+        search_safety_trajectory(traj, optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
 
-    // search safety trajectory
-    std::vector<State> optimal_traj;
-    search_safety_trajectory(optimal_traj, optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+        cmd_vel.linear.x  = traj.front().velocity_;
+        cmd_vel.angular.z = traj.front().yawrate_;
+    }
 
     visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
-    visualize_trajectory(optimal_traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
-    predict_footprint_pub_.publish(transform_footprint(optimal_traj.back()));
-
-    geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x  = optimal_traj.front().velocity_;
-    cmd_vel.angular.z = optimal_traj.front().yawrate_;
+    visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+    predict_footprint_pub_.publish(transform_footprint(traj.back()));
 
     return cmd_vel;
 }

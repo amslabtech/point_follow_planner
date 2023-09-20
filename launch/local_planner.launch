@@ -12,8 +12,9 @@
     <arg name="local_goal" default="/local_goal"/>
     <arg name="local_map" default="/local_map"/>
     <arg name="odom" default="/odom"/>
+    <arg name="target_velocity" default="/target_velocity"/>
 
-
+    <!-- run point_follow_planner node -->
     <node pkg="point_follow_planner" type="point_follow_planner" name="point_follow_planner" ns="$(arg ns)" output="screen">
         <!-- param -->
         <param name="/hz" value="$(arg hz)"/>
@@ -25,5 +26,6 @@
         <remap from="/local_goal" to="$(arg local_goal)"/>
         <remap from="/local_map" to="$(arg local_map)"/>
         <remap from="/odom" to="$(arg odom)"/>
+        <remap from="/target_velocity" to="$(arg target_velocity)"/>
     </node>
 </launch>

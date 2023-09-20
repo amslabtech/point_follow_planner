@@ -13,6 +13,7 @@
     <arg name="local_goal" default="/local_goal"/>
     <arg name="local_map" default="/local_map"/>
     <arg name="odom" default="/odom"/>
+    <arg name="target_velocity" default="/target_velocity"/>
 
 
     <rosparam param="/use_sim_time">true</rosparam>
@@ -28,6 +29,7 @@
         <arg name="local_goal" value="$(arg local_goal)"/>
         <arg name="local_map" value="$(arg local_map)"/>
         <arg name="odom" value="$(arg odom)"/>
+        <arg name="target_velocity" value="$(arg target_velocity)"/>
     </include>
 
     <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="

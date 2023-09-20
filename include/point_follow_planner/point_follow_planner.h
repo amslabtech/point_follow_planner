@@ -53,6 +53,7 @@ protected:
     void footprint_callback(const geometry_msgs::PolygonStampedPtr& msg);
     void local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg);
     void odom_callback(const nav_msgs::OdometryConstPtr& msg);
+    void target_velocity_callback(const geometry_msgs::TwistConstPtr& msg);
 
     // others
     void motion(State& state, const double velocity, const double yawrate);
@@ -105,6 +106,7 @@ protected:
     int velocity_samples_;
     int yawrate_samples_;
     double hz_;
+    double target_velocity_;
     double max_velocity_;
     double min_velocity_;
     double max_yawrate_;
@@ -128,6 +130,7 @@ protected:
     ros::Subscriber goal_sub_;
     ros::Subscriber local_map_sub_;
     ros::Subscriber odom_sub_;
+    ros::Subscriber target_velocity_sub_;
 
     geometry_msgs::PoseStamped goal_;
     geometry_msgs::PoseArray obs_list_;
