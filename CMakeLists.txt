@@ -15,17 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED COMPONENTS system)
 
 
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs
-#   std_msgs
-# )
-
-
 ###################################
 ## catkin specific configuration ##
 ###################################
