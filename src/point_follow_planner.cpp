@@ -1,5 +1,6 @@
 #include "point_follow_planner/point_follow_planner.h"
 #include <algorithm>
+#include <ostream>
 
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
@@ -97,7 +98,10 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
 {
     max_velocity_ = std::min(msg->linear.x, max_velocity_);
-    ROS_WARN_STREAM("target velocity was updated to " << max_velocity_ << "[m/s]");
+    ROS_WARN_THROTTLE(1.0, "");
+    ROS_WARN_THROTTLE(1.0, "===");
+    ROS_WARN_THROTTLE(1.0, "target velocity was updated to %f [m/s]", max_velocity_);
+    ROS_WARN_THROTTLE(1.0, "===\n");
 }
 
 
