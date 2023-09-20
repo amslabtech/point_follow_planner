@@ -89,7 +89,7 @@ void PointFollowPlanner::local_map_callback(const nav_msgs::OccupancyGridConstPt
 void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 {
     current_velocity_ = msg->twist.twist;
-    if(current_velocity_.linear.x < 0.0) current_velocity_.linear.x = 0.0;
+    current_velocity_.linear.x = std::max(current_velocity_.linear.x, 0.0);
     odom_updated_ = true;
 }
 
@@ -324,8 +324,7 @@ void PointFollowPlanner::search_safety_trajectory(
         const double optimal_velocity,
         const double optimal_yawrate,
         const Window dynamic_window,
-        const Eigen::Vector3d& goal,
-        std::vector<std::vector<State>>& trajectories)
+        const Eigen::Vector3d& goal)
 {
     bool is_found_safety_traj = false;
     const double velocity_resolution = (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / velocity_samples_;
@@ -333,18 +332,13 @@ void PointFollowPlanner::search_safety_trajectory(
     for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution)
     {
         // predict robot motion
-        push_back_trajectory(trajectories, velocity, optimal_yawrate);
+        generate_trajectory(optimal_traj, velocity, optimal_yawrate);
 
         // judge safety trajectory
-        if(!check_collision(trajectories.back()))
-        {
-            optimal_traj = trajectories.back();
+        if(!check_collision(optimal_traj))
             is_found_safety_traj = true;
-        }
         else
-        {
             break;
-        }
     }
 
     if(!is_found_safety_traj) generate_trajectory(optimal_traj, 0.0, 0.0);
@@ -388,7 +382,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     {
         double optimal_velocity, optimal_yawrate;
         search_optimal_cmd_vel_for_goal(optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
-        search_safety_trajectory(traj, optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+        search_safety_trajectory(traj, optimal_velocity, optimal_yawrate, dynamic_window, goal);
 
         cmd_vel.linear.x  = traj.front().velocity_;
         cmd_vel.angular.z = traj.front().yawrate_;
