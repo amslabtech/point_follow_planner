@@ -1,6 +1,4 @@
 #include "point_follow_planner/point_follow_planner.h"
-#include <algorithm>
-#include <ostream>
 
 PointFollowPlanner::PointFollowPlanner(void)
     :private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
@@ -252,6 +250,7 @@ void PointFollowPlanner::motion(State& state, const double velocity, const doubl
 
 void PointFollowPlanner::generate_trajectory(std::vector<State>& trajectory, const double velocity, const double yawrate)
 {
+        trajectory.clear();
         State state;
         for(float t=0; t<=predict_time_; t+=dt_)
         {
@@ -347,20 +346,16 @@ void PointFollowPlanner::search_safety_trajectory(
         }
     }
 
-    if(!is_found_safety_traj)
-    {
-        State state;
-        std::vector<State> traj;
-        traj.push_back(state);
-        optimal_traj = traj;
-    }
+    if(!is_found_safety_traj) generate_trajectory(optimal_traj, 0.0, 0.0);
 }
 
 
 geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, const Eigen::Vector3d goal)
 {
     std::vector<std::vector<State>> trajectories;
+    std::vector<State> traj;
 
+    // turning in place
     const double angle_to_goal = atan2(goal.y(), goal.x());
     if(angle_to_goal_th_ < fabs(angle_to_goal))
     {
@@ -368,7 +363,6 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
 
         // predict robot motion
-        std::vector<State> traj;
         generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
 
         // judge safety trajectory
@@ -382,22 +376,26 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         }
     }
 
-    // search optimal cmd vel for goal
-    double optimal_velocity;
-    double optimal_yawrate;
-    search_optimal_cmd_vel_for_goal(optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+    // planing
+    geometry_msgs::Twist cmd_vel;
+    if(fabs(dynamic_window.max_velocity_) < DBL_EPSILON)
+    {
+        generate_trajectory(traj, 0.0, 0.0);
+        trajectories.push_back(traj);
+    }
+    else
+    {
+        double optimal_velocity, optimal_yawrate;
+        search_optimal_cmd_vel_for_goal(optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+        search_safety_trajectory(traj, optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
 
-    // search safety trajectory
-    std::vector<State> optimal_traj;
-    search_safety_trajectory(optimal_traj, optimal_velocity, optimal_yawrate, dynamic_window, goal, trajectories);
+        cmd_vel.linear.x  = traj.front().velocity_;
+        cmd_vel.angular.z = traj.front().yawrate_;
+    }
 
     visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
-    visualize_trajectory(optimal_traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
-    predict_footprint_pub_.publish(transform_footprint(optimal_traj.back()));
-
-    geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x  = optimal_traj.front().velocity_;
-    cmd_vel.angular.z = optimal_traj.front().yawrate_;
+    visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+    predict_footprint_pub_.publish(transform_footprint(traj.back()));
 
     return cmd_vel;
 }
