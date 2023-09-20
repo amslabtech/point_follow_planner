@@ -106,6 +106,7 @@ protected:
     int velocity_samples_;
     int yawrate_samples_;
     double hz_;
+    double target_velocity_;
     double max_velocity_;
     double min_velocity_;
     double max_yawrate_;

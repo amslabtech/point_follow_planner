@@ -5,6 +5,7 @@ PointFollowPlanner::PointFollowPlanner(void)
 {
     private_nh_.param<double>("hz", hz_, {20});
     private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
+    private_nh_.param<double>("target_velocity", target_velocity_, {0.55});
     private_nh_.param<double>("max_velocity", max_velocity_, {0.55});
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
@@ -95,10 +96,10 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
 {
-    max_velocity_ = std::min(msg->linear.x, max_velocity_);
+    target_velocity_ = std::min(msg->linear.x, max_velocity_);
     ROS_WARN_THROTTLE(1.0, "");
     ROS_WARN_THROTTLE(1.0, "===");
-    ROS_WARN_THROTTLE(1.0, "target velocity was updated to %f [m/s]", max_velocity_);
+    ROS_WARN_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
     ROS_WARN_THROTTLE(1.0, "===\n");
 }
 
@@ -135,7 +136,7 @@ PointFollowPlanner::Window PointFollowPlanner::calc_dynamic_window(const geometr
 {
     Window window(min_velocity_, max_velocity_, -max_yawrate_, max_yawrate_);
     window.min_velocity_ = std::max((current_velocity.linear.x - max_acceleration_*dt_), min_velocity_);
-    window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_*dt_), max_velocity_);
+    window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_*dt_), target_velocity_);
     window.min_yawrate_  = std::max((current_velocity.angular.z - max_d_yawrate_*dt_), -max_yawrate_);
     window.max_yawrate_  = std::min((current_velocity.angular.z + max_d_yawrate_*dt_),  max_yawrate_);
 
