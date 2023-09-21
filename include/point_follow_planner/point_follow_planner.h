@@ -71,8 +71,7 @@ protected:
             const double optimal_velocity,
             const double optimal_yawrate,
             const Window dynamic_window,
-            const Eigen::Vector3d& goal,
-            std::vector<std::vector<State>>& trajectories);
+            const Eigen::Vector3d& goal);
     bool can_move();
     bool check_collision(const std::vector<State>& traj);
     bool is_inside_of_triangle(const geometry_msgs::Point& target_point, const geometry_msgs::Polygon& triangle);
