@@ -97,7 +97,7 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
 {
     target_velocity_ = std::min(msg->linear.x, max_velocity_);
-    ROS_WARN_THROTTLE(1.0, "");
+    ROS_WARN_THROTTLE(1.0, " ");
     ROS_WARN_THROTTLE(1.0, "===");
     ROS_WARN_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
     ROS_WARN_THROTTLE(1.0, "===\n");
