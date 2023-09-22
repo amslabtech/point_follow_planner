@@ -119,6 +119,8 @@ protected:
     double predict_time_;
     double dt_;
     double angle_to_goal_th_;
+    double goal_threshold_;
+    double turn_direction_threshold_;
 
     std::string robot_frame_;
 

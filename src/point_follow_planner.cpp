@@ -22,6 +22,8 @@ PointFollowPlanner::PointFollowPlanner(void):
     private_nh_.param<double>("predict_time", predict_time_, {3.0});
     private_nh_.param<double>("dt", dt_, {0.1});
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
+    private_nh_.param<double>("goal_threshold", goal_threshold_, {0.3});
+    private_nh_.param<double>("turn_direction_threshold", turn_direction_threshold_, {0.1});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
     private_nh_.param<int>("sub_count_th", sub_count_th_, {3});
@@ -359,8 +361,19 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     std::vector<std::vector<State>> trajectories;
     std::vector<State> traj;
 
-    // turning in place
+    // reaching goal 
     const double angle_to_goal = atan2(goal.y(), goal.x());
+    const double dist_to_goal = hypot(goal.x(), goal.y());
+    if(dist_to_goal <= goal_threshold_)
+    {
+        geometry_msgs::Twist cmd_vel;
+        if(turn_direction_threshold_ < fabs(goal[2]))
+            cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
+        else
+            cmd_vel.angular.z = 0.0;
+    }
+
+    // turning in place
     if(angle_to_goal_th_ < fabs(angle_to_goal))
     {
         geometry_msgs::Twist cmd_vel;
