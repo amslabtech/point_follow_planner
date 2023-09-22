@@ -108,10 +108,7 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
 {
     target_velocity_ = std::min(msg->linear.x, max_velocity_);
-    ROS_WARN_THROTTLE(1.0, " ");
-    ROS_WARN_THROTTLE(1.0, "===");
-    ROS_WARN_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
-    ROS_WARN_THROTTLE(1.0, "===\n");
+    ROS_INFO_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
 }
 
 
@@ -361,7 +358,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     std::vector<std::vector<State>> trajectories;
     std::vector<State> traj;
 
-    // reaching goal 
+    // reaching goal
     const double angle_to_goal = atan2(goal.y(), goal.x());
     const double dist_to_goal = hypot(goal.x(), goal.y());
     if(dist_to_goal <= goal_threshold_)
