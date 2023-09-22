@@ -25,7 +25,7 @@ PointFollowPlanner::PointFollowPlanner(void):
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<double>("goal_threshold", goal_threshold_, {0.3});
     private_nh_.param<double>("turn_direction_threshold", turn_direction_threshold_, {0.1});
-    private_nh_.param<double>("obs_dist_th", obs_dist_th_, {0.4});
+    private_nh_.param<double>("obs_dist_th", obs_dist_th_, {1.0});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
     private_nh_.param<int>("sub_count_th", sub_count_th_, {3});
