@@ -6,6 +6,7 @@ PointFollowPlanner::PointFollowPlanner(void):
     footprint_subscribed_(false),
     odom_updated_(false),
     local_map_updated_(false),
+    is_behind_obj_(false),
     local_map_not_sub_count_(0),
     odom_not_sub_count_(0)
 {
@@ -24,6 +25,7 @@ PointFollowPlanner::PointFollowPlanner(void):
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<double>("goal_threshold", goal_threshold_, {0.3});
     private_nh_.param<double>("turn_direction_threshold", turn_direction_threshold_, {0.1});
+    private_nh_.param<double>("obs_dist_th", obs_dist_th_, {0.4});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
     private_nh_.param<int>("sub_count_th", sub_count_th_, {3});
@@ -40,6 +42,7 @@ PointFollowPlanner::PointFollowPlanner(void):
     ROS_INFO_STREAM("predict_time: " << predict_time_);
     ROS_INFO_STREAM("dt: " << dt_);
     ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
+    ROS_INFO_STREAM("obs_dist_th: " << obs_dist_th_);
 
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
@@ -132,6 +135,8 @@ void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid& map)
                 if(map.data[index_x + index_y*map.info.width] == 100)
                 {
                     obs_list_.poses.push_back(pose);
+                    if((fabs(angle) < 2.0*angle_to_goal_th_) and (dist <= obs_dist_th_))
+                        is_behind_obj_ = true;
                     break;
                 }
             }
@@ -368,6 +373,31 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
             cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
         else
             cmd_vel.angular.z = 0.0;
+
+        generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
+        trajectories.push_back(traj);
+        visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
+        visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+        predict_footprint_pub_.publish(transform_footprint(traj.back()));
+
+        return cmd_vel;
+    }
+
+    // stop behind object
+    if(previous_velocity_.linear.x <= 0.2 and is_behind_obj_)
+    {
+        ROS_WARN_THROTTLE(1.0, "##########################");
+        ROS_WARN_THROTTLE(1.0, "### stop behind object ###");
+        ROS_WARN_THROTTLE(1.0, "##########################");
+
+        geometry_msgs::Twist cmd_vel;
+        generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
+        trajectories.push_back(traj);
+        visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
+        visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+        predict_footprint_pub_.publish(transform_footprint(traj.back()));
+
+        return cmd_vel;
     }
 
     // turning in place
@@ -453,9 +483,11 @@ void PointFollowPlanner::process()
         geometry_msgs::Twist cmd_vel;
         if(can_move()) cmd_vel = calc_cmd_vel();
         cmd_vel_pub_.publish(cmd_vel);
+        previous_velocity_ = cmd_vel;
 
         odom_updated_ = false;
         local_map_updated_ = false;
+        is_behind_obj_ = false;
         ros::spinOnce();
         loop_rate.sleep();
     }

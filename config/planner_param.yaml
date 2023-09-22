@@ -8,3 +8,4 @@ velocity_samples: 3
 yawrate_samples: 20
 goal_threshold: 0.3
 turn_direction_threshold: 0.1
+obs_dist_th: 1.16
