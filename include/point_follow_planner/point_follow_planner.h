@@ -102,6 +102,7 @@ protected:
     bool footprint_subscribed_;
     bool odom_updated_;
     bool local_map_updated_;
+    bool is_behind_obj_;
     int velocity_samples_;
     int yawrate_samples_;
     int sub_count_th_;
@@ -121,6 +122,7 @@ protected:
     double angle_to_goal_th_;
     double goal_threshold_;
     double turn_direction_threshold_;
+    double obs_dist_th_;
 
     std::string robot_frame_;
 
@@ -140,6 +142,7 @@ protected:
     geometry_msgs::PoseArray obs_list_;
     geometry_msgs::PolygonStamped footprint_;
     geometry_msgs::Twist current_velocity_;
+    geometry_msgs::Twist previous_velocity_;
 
     tf::TransformListener listener_;
 };
