@@ -104,6 +104,9 @@ protected:
     bool local_map_updated_;
     int velocity_samples_;
     int yawrate_samples_;
+    int sub_count_th_;
+    int local_map_not_sub_count_;
+    int odom_not_sub_count_;
     double hz_;
     double target_velocity_;
     double max_velocity_;
