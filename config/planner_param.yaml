@@ -6,3 +6,5 @@ angle_to_goal_th: 0.26
 max_yawrate_in_situ_turns: 0.4
 velocity_samples: 3
 yawrate_samples: 20
+goal_threshold: 0.3
+turn_direction_threshold: 0.1
