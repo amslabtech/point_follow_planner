@@ -1,7 +1,13 @@
 #include "point_follow_planner/point_follow_planner.h"
 
-PointFollowPlanner::PointFollowPlanner(void)
-    :private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false), local_map_updated_(false)
+PointFollowPlanner::PointFollowPlanner(void):
+    private_nh_("~"),
+    goal_subscribed_(false),
+    footprint_subscribed_(false),
+    odom_updated_(false),
+    local_map_updated_(false),
+    local_map_not_sub_count_(0),
+    odom_not_sub_count_(0)
 {
     private_nh_.param<double>("hz", hz_, {20});
     private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
@@ -18,6 +24,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
+    private_nh_.param<int>("sub_count_th", sub_count_th_, {3});
 
     ROS_INFO("=== Point Followe Planner ===");
     ROS_INFO_STREAM("hz: " << hz_);
@@ -82,6 +89,7 @@ void PointFollowPlanner::footprint_callback(const geometry_msgs::PolygonStampedP
 void PointFollowPlanner::local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg)
 {
     raycast(*msg);
+    local_map_not_sub_count_ = 0;
     local_map_updated_ = true;
 }
 
@@ -90,6 +98,7 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 {
     current_velocity_ = msg->twist.twist;
     current_velocity_.linear.x = std::max(current_velocity_.linear.x, 0.0);
+    odom_not_sub_count_ = 0;
     odom_updated_ = true;
 }
 
@@ -409,13 +418,16 @@ bool PointFollowPlanner::can_move()
 {
     if(!goal_subscribed_) ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
     if(!footprint_subscribed_) ROS_WARN_THROTTLE(1.0, "Footprint has not been updated");
-    if(!local_map_updated_) ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
-    if(!odom_updated_) ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
+    if(sub_count_th_ < local_map_not_sub_count_) ROS_WARN_THROTTLE(1.0, "Local map has not been updated");
+    if(sub_count_th_ < odom_not_sub_count_) ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
+
+    if(!local_map_updated_) local_map_not_sub_count_++;
+    if(!odom_updated_) odom_not_sub_count_++;
 
     if(goal_subscribed_
         and footprint_subscribed_
-        and local_map_updated_
-        and odom_updated_)
+        and local_map_not_sub_count_ <= sub_count_th_
+        and odom_not_sub_count_ <= sub_count_th_)
         return true;
     else
         return false;
