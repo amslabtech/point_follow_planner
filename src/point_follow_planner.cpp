@@ -383,23 +383,6 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
         return cmd_vel;
     }
 
-    // stop behind object
-    if(previous_velocity_.linear.x <= 0.2 and is_behind_obj_)
-    {
-        ROS_WARN_THROTTLE(1.0, "##########################");
-        ROS_WARN_THROTTLE(1.0, "### stop behind object ###");
-        ROS_WARN_THROTTLE(1.0, "##########################");
-
-        geometry_msgs::Twist cmd_vel;
-        generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
-        trajectories.push_back(traj);
-        visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
-        visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
-        predict_footprint_pub_.publish(transform_footprint(traj.back()));
-
-        return cmd_vel;
-    }
-
     // turning in place
     if(angle_to_goal_th_ < fabs(angle_to_goal))
     {
@@ -418,6 +401,23 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
             predict_footprint_pub_.publish(transform_footprint(traj.back()));
             return cmd_vel;
         }
+    }
+
+    // stop behind object
+    if(previous_velocity_.linear.x <= 0.2 and is_behind_obj_)
+    {
+        ROS_WARN_THROTTLE(1.0, "##########################");
+        ROS_WARN_THROTTLE(1.0, "### stop behind object ###");
+        ROS_WARN_THROTTLE(1.0, "##########################");
+
+        geometry_msgs::Twist cmd_vel;
+        generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
+        trajectories.push_back(traj);
+        visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
+        visualize_trajectory(traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
+        predict_footprint_pub_.publish(transform_footprint(traj.back()));
+
+        return cmd_vel;
     }
 
     // planing
