@@ -310,7 +310,7 @@ void PointFollowPlanner::search_optimal_cmd_vel_for_goal(
             }
         }
 
-        if (dynamic_window.min_velocity_ < 0.0 and 0.0 < dynamic_window.max_velocity_)
+        if (dynamic_window.min_yawrate_ < 0.0 and 0.0 < dynamic_window.max_yawrate_)
         {
             // predict robot motion
             push_back_trajectory(trajectories, velocity, 0.0);
