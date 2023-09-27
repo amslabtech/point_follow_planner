@@ -2,6 +2,7 @@
 #define Point_Follow_PLANNER_H
 
 #include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
@@ -132,6 +133,7 @@ protected:
     ros::Publisher candidate_trajectories_pub_;
     ros::Publisher best_trajectory_pub_;
     ros::Publisher predict_footprint_pub_;
+    ros::Publisher finish_flag_pub_;
     ros::Subscriber footprint_sub_;
     ros::Subscriber goal_sub_;
     ros::Subscriber local_map_sub_;
@@ -143,6 +145,8 @@ protected:
     geometry_msgs::PolygonStamped footprint_;
     geometry_msgs::Twist current_velocity_;
     geometry_msgs::Twist previous_velocity_;
+
+    std_msgs::Bool has_finished;
 
     tf::TransformListener listener_;
 };
