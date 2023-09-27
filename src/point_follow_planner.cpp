@@ -371,7 +371,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     {
         geometry_msgs::Twist cmd_vel;
         if(turn_direction_threshold_ < fabs(goal[2]))
-            cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
+            cmd_vel.angular.z = std::min(std::max(goal[2], -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
         else
             has_finished.data = true;
 
