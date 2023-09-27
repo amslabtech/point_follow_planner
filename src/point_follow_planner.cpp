@@ -48,6 +48,7 @@ PointFollowPlanner::PointFollowPlanner(void):
     best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
     candidate_trajectories_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("candidate_trajectories", 1);
     predict_footprint_pub_ = private_nh_.advertise<geometry_msgs::PolygonStamped>("predict_footprint", 1);
+    finish_flag_pub_ = private_nh_.advertise<std_msgs::Bool>("finish_flag", 1);
 
     footprint_sub_ = nh_.subscribe("/footprint", 1, &PointFollowPlanner::footprint_callback, this);
     goal_sub_ = nh_.subscribe("/local_goal", 1, &PointFollowPlanner::goal_callback, this);
@@ -370,9 +371,9 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     {
         geometry_msgs::Twist cmd_vel;
         if(turn_direction_threshold_ < fabs(goal[2]))
-            cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
+            cmd_vel.angular.z = std::min(std::max(goal[2], -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
         else
-            cmd_vel.angular.z = 0.0;
+            has_finished.data = true;
 
         generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
         trajectories.push_back(traj);
@@ -483,11 +484,14 @@ void PointFollowPlanner::process()
         geometry_msgs::Twist cmd_vel;
         if(can_move()) cmd_vel = calc_cmd_vel();
         cmd_vel_pub_.publish(cmd_vel);
-        previous_velocity_ = cmd_vel;
+        finish_flag_pub_.publish(has_finished);
 
+        previous_velocity_ = cmd_vel;
         odom_updated_ = false;
         local_map_updated_ = false;
         is_behind_obj_ = false;
+        has_finished.data = false;
+
         ros::spinOnce();
         loop_rate.sleep();
     }
