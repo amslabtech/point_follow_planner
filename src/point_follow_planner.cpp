@@ -127,7 +127,7 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
 void PointFollowPlanner::dist_to_goal_th_callback(const std_msgs::Float64ConstPtr& msg)
 {
     dist_to_goal_th_ = msg->data;
-    ROS_INFO_THROTTLE(1.0, "distance to goal threshold was updated to %f [m/s]", dist_to_goal_th_);
+    ROS_INFO_THROTTLE(1.0, "distance to goal threshold was updated to %f [m]", dist_to_goal_th_);
 }
 
 
