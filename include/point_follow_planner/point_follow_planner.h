@@ -98,17 +98,8 @@ protected:
 
 
     // param
-    bool goal_subscribed_;
-    bool footprint_subscribed_;
-    bool odom_updated_;
-    bool local_map_updated_;
-    bool is_behind_obj_;
-    int velocity_samples_;
-    int yawrate_samples_;
-    int sub_count_th_;
-    int local_map_not_sub_count_;
-    int odom_not_sub_count_;
     double hz_;
+    std::string robot_frame_;
     double target_velocity_;
     double max_velocity_;
     double min_velocity_;
@@ -120,14 +111,23 @@ protected:
     double predict_time_;
     double dt_;
     double angle_to_goal_th_;
-    double goal_threshold_;
-    double turn_direction_threshold_;
+    double dist_to_goal_th_;
+    double turn_direction_th_;
     double obs_dist_th_;
-
-    std::string robot_frame_;
+    bool goal_subscribed_;
+    bool footprint_subscribed_;
+    bool odom_updated_;
+    bool local_map_updated_;
+    bool is_behind_obj_;
+    int local_map_not_sub_count_;
+    int odom_not_sub_count_;
+    int sub_count_th_;
+    int velocity_samples_;
+    int yawrate_samples_;
 
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
+
     ros::Publisher cmd_vel_pub_;
     ros::Publisher candidate_trajectories_pub_;
     ros::Publisher best_trajectory_pub_;
