@@ -3,6 +3,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float64.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
@@ -55,6 +56,7 @@ protected:
     void local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg);
     void odom_callback(const nav_msgs::OdometryConstPtr& msg);
     void target_velocity_callback(const geometry_msgs::TwistConstPtr& msg);
+    void dist_to_goal_th_callback(const std_msgs::Float64ConstPtr& msg);
 
     // others
     void motion(State& state, const double velocity, const double yawrate);
@@ -138,6 +140,7 @@ protected:
     ros::Subscriber local_map_sub_;
     ros::Subscriber odom_sub_;
     ros::Subscriber target_velocity_sub_;
+    ros::Subscriber dist_to_goal_th_sub_;
 
     geometry_msgs::PoseStamped goal_;
     geometry_msgs::PoseArray obs_list_;

@@ -62,6 +62,7 @@ PointFollowPlanner::PointFollowPlanner(void):
     local_map_sub_ = nh_.subscribe("/local_map", 1, &PointFollowPlanner::local_map_callback, this);
     odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
     target_velocity_sub_ = nh_.subscribe("/target_velocity", 1, &PointFollowPlanner::target_velocity_callback, this);
+    dist_to_goal_th_sub_ = nh_.subscribe("/dist_to_goal_th", 1, &PointFollowPlanner::dist_to_goal_th_callback, this);
 }
 
 
@@ -120,6 +121,13 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
 {
     target_velocity_ = std::min(msg->linear.x, max_velocity_);
     ROS_INFO_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
+}
+
+
+void PointFollowPlanner::dist_to_goal_th_callback(const std_msgs::Float64ConstPtr& msg)
+{
+    dist_to_goal_th_ = msg->data;
+    ROS_INFO_THROTTLE(1.0, "distance to goal threshold was updated to %f [m]", dist_to_goal_th_);
 }
 
 
