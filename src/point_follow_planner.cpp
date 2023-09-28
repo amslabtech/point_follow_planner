@@ -23,26 +23,33 @@ PointFollowPlanner::PointFollowPlanner(void):
     private_nh_.param<double>("predict_time", predict_time_, {3.0});
     private_nh_.param<double>("dt", dt_, {0.1});
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
-    private_nh_.param<double>("goal_threshold", goal_threshold_, {0.3});
-    private_nh_.param<double>("turn_direction_threshold", turn_direction_threshold_, {0.1});
+    private_nh_.param<double>("dist_to_goal_th", dist_to_goal_th_, {0.3});
+    private_nh_.param<double>("turn_direction_th", turn_direction_th_, {0.1});
     private_nh_.param<double>("obs_dist_th", obs_dist_th_, {1.0});
+    private_nh_.param<int>("sub_count_th", sub_count_th_, {3});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
-    private_nh_.param<int>("sub_count_th", sub_count_th_, {3});
 
     ROS_INFO("=== Point Followe Planner ===");
     ROS_INFO_STREAM("hz: " << hz_);
     ROS_INFO_STREAM("robot_frame: " << robot_frame_);
+    ROS_INFO_STREAM("target_velocity: " << target_velocity_);
     ROS_INFO_STREAM("max_velocity: " << max_velocity_);
     ROS_INFO_STREAM("min_velocity: " << min_velocity_);
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
+    ROS_INFO_STREAM("max_yawrate_in_situ_turns: " << max_yawrate_in_situ_turns_);
     ROS_INFO_STREAM("max_acceleration: " << max_acceleration_);
     ROS_INFO_STREAM("max_d_yawrate: " << max_d_yawrate_);
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
     ROS_INFO_STREAM("predict_time: " << predict_time_);
     ROS_INFO_STREAM("dt: " << dt_);
     ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
+    ROS_INFO_STREAM("dist_to_goal_th: " << dist_to_goal_th_);
+    ROS_INFO_STREAM("turn_direction_th: " << turn_direction_th_);
     ROS_INFO_STREAM("obs_dist_th: " << obs_dist_th_);
+    ROS_INFO_STREAM("sub_count_th: " << sub_count_th_);
+    ROS_INFO_STREAM("velocity_samples: " << velocity_samples_);
+    ROS_INFO_STREAM("yawrate_samples: " << yawrate_samples_);
 
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
@@ -354,10 +361,10 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     // reaching goal
     const double angle_to_goal = atan2(goal.y(), goal.x());
     const double dist_to_goal = hypot(goal.x(), goal.y());
-    if(dist_to_goal <= goal_threshold_)
+    if(dist_to_goal <= dist_to_goal_th_)
     {
         geometry_msgs::Twist cmd_vel;
-        if(turn_direction_threshold_ < fabs(goal[2]))
+        if(turn_direction_th_ < fabs(goal[2]))
             cmd_vel.angular.z = std::min(std::max(goal[2], -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
         else
             has_finished.data = true;
