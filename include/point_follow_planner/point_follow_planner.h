@@ -82,7 +82,6 @@ protected:
     geometry_msgs::Twist planning(const Window dynamic_window, const Eigen::Vector3d goal);
     geometry_msgs::Twist calc_cmd_vel();
     Window calc_dynamic_window(const geometry_msgs::Twist& current_velocity);
-
     void visualize_trajectory(
             const std::vector<State>& trajectory,
             const double r,

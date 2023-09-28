@@ -298,13 +298,8 @@ void PointFollowPlanner::search_optimal_cmd_vel_for_goal(
     {
         for(double yawrate=dynamic_window.min_yawrate_; yawrate<=dynamic_window.max_yawrate_; yawrate+=yawrate_resolution)
         {
-            // predict robot motion
             push_back_trajectory(trajectories, velocity, yawrate);
-
-            // calc goal cost
             const double goal_cost = calc_goal_cost(trajectories.back(), goal);
-
-            // update min cost & optimal cmd vel
             if(goal_cost <= min_cost)
             {
                 min_cost  = goal_cost;
@@ -315,13 +310,8 @@ void PointFollowPlanner::search_optimal_cmd_vel_for_goal(
 
         if (dynamic_window.min_yawrate_ < 0.0 and 0.0 < dynamic_window.max_yawrate_)
         {
-            // predict robot motion
             push_back_trajectory(trajectories, velocity, 0.0);
-
-            // calc goal cost
             const double goal_cost = calc_goal_cost(trajectories.back(), goal);
-
-            // update min cost & optimal cmd vel
             if(goal_cost <= min_cost)
             {
                 min_cost  = goal_cost;
@@ -345,10 +335,7 @@ void PointFollowPlanner::search_safety_trajectory(
 
     for(double velocity=dynamic_window.min_velocity_; velocity<=optimal_velocity; velocity+=velocity_resolution)
     {
-        // predict robot motion
         generate_trajectory(optimal_traj, velocity, optimal_yawrate);
-
-        // judge safety trajectory
         if(!check_collision(optimal_traj))
             is_found_safety_traj = true;
         else
@@ -389,11 +376,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     {
         geometry_msgs::Twist cmd_vel;
         cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
-
-        // predict robot motion
         generate_trajectory(traj, cmd_vel.linear.x, cmd_vel.angular.z);
-
-        // judge safety trajectory
         if(!check_collision(traj))
         {
             trajectories.push_back(traj);
