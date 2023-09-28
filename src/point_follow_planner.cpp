@@ -143,7 +143,7 @@ void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid& map)
                 if(map.data[index_x + index_y*map.info.width] == 100)
                 {
                     obs_list_.poses.push_back(pose);
-                    if((fabs(angle) < 2.0*angle_to_goal_th_) and (dist <= obs_dist_th_))
+                    if(fabs(angle) < angle_to_goal_th_ and dist < obs_dist_th_)
                         is_behind_obj_ = true;
                     break;
                 }
@@ -395,7 +395,7 @@ geometry_msgs::Twist PointFollowPlanner::planning(const Window dynamic_window, c
     }
 
     // stop behind object
-    if(previous_velocity_.linear.x <= 0.2 and is_behind_obj_)
+    if(previous_velocity_.linear.x < max_acceleration_*dt_+DBL_EPSILON and is_behind_obj_)
     {
         ROS_WARN_THROTTLE(1.0, "##########################");
         ROS_WARN_THROTTLE(1.0, "### stop behind object ###");
