@@ -280,13 +280,27 @@ void PointFollowPlanner::motion(State& state, const double velocity, const doubl
 
 void PointFollowPlanner::generate_trajectory(std::vector<State>& trajectory, const double velocity, const double yawrate)
 {
-        trajectory.clear();
-        State state;
-        for(float t=0; t<=predict_time_; t+=dt_)
-        {
-            motion(state, velocity, yawrate);
-            trajectory.push_back(state);
-        }
+    trajectory.clear();
+    State state;
+    for(float t=0; t<=predict_time_; t+=dt_)
+    {
+        motion(state, velocity, yawrate);
+        trajectory.push_back(state);
+    }
+}
+
+
+void PointFollowPlanner::generate_trajectory(std::vector<State>& trajectory, const double yawrate, const Eigen::Vector3d& goal)
+{
+    trajectory.clear();
+    State state;
+    const double angle_to_goal = atan2(goal.y(), goal.x());
+    const double predict_time = angle_to_goal / yawrate;
+    for(float t=0; t<=predict_time; t+=dt_)
+    {
+        motion(state, 0.0, yawrate);
+        trajectory.push_back(state);
+    }
 }
 
 
@@ -404,7 +418,7 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
         {
             const double angle_to_goal = atan2(goal.y(), goal.x());
             cmd_vel.angular.z = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
-            generate_trajectory(best_traj, cmd_vel.linear.x, cmd_vel.angular.z);
+            generate_trajectory(best_traj, cmd_vel.angular.z, goal);
             trajectories.push_back(best_traj);
         }
         else
@@ -445,7 +459,8 @@ bool PointFollowPlanner::can_adjust_robot_direction(const Eigen::Vector3d& goal)
 
     const double yawrate = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
     std::vector<State> traj;
-    generate_trajectory(traj, 0.0, yawrate);
+    generate_trajectory(traj, yawrate, goal);
+
     if(!check_collision(traj))
         return true;
     else
