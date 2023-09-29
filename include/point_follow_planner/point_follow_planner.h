@@ -62,6 +62,7 @@ protected:
     void motion(State& state, const double velocity, const double yawrate);
     void raycast(const nav_msgs::OccupancyGrid& map);
     void generate_trajectory(std::vector<State>& trajectory, const double velocity, const double yawrate);
+    void generate_trajectory(std::vector<State>& trajectory, const double yawrate, const Eigen::Vector3d& goal);
     void push_back_trajectory(std::vector<std::vector<State>>& trajectories, const double velocity, const double yawrate);
     void search_optimal_cmd_vel_for_goal(
             double& optimal_velocity,
@@ -76,12 +77,16 @@ protected:
             const Window dynamic_window,
             const Eigen::Vector3d& goal);
     bool can_move();
+    bool can_adjust_robot_direction(const Eigen::Vector3d& goal);
     bool check_collision(const std::vector<State>& traj);
     bool is_inside_of_triangle(const geometry_msgs::Point& target_point, const geometry_msgs::Polygon& triangle);
     bool is_inside_of_robot(const geometry_msgs::Pose& obstacle, const State & state);
     double calc_goal_cost(const std::vector<State>& traj, const Eigen::Vector3d& goal);
     geometry_msgs::PolygonStamped transform_footprint(const State& target_pose);
-    geometry_msgs::Twist planning(const Window dynamic_window, const Eigen::Vector3d goal);
+    void planning(
+            std::vector<State>& best_traj,
+            std::vector<std::vector<State>>& trajectories,
+            const Eigen::Vector3d& goal);
     geometry_msgs::Twist calc_cmd_vel();
     Window calc_dynamic_window(const geometry_msgs::Twist& current_velocity);
     void visualize_trajectory(
@@ -121,6 +126,7 @@ protected:
     bool odom_updated_;
     bool local_map_updated_;
     bool is_behind_obj_;
+    bool has_reached_;
     int local_map_not_sub_count_;
     int odom_not_sub_count_;
     int sub_count_th_;
