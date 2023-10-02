@@ -5,6 +5,7 @@
 
     <!-- param -->
     <arg name="hz" default="20"/>
+    <arg name="subscribe_count_th" default="3"/>
     <arg name="planner_param" default="$(find point_follow_planner)/config/planner_param.yaml"/>
     <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
     <!-- topic name -->
@@ -20,9 +21,10 @@
 
     <include file="$(find point_follow_planner)/launch/local_planner.launch">
         <!-- param -->
-        <arg name="hz" value="$(arg hz)"/>
         <arg name="planner_param" value="$(arg planner_param)"/>
         <arg name="robot_param" value="$(arg robot_param)"/>
+        <arg name="hz" value="$(arg hz)"/>
+        <param name="subscribe_count_th" value="$(arg subscribe_count_th)"/>
         <!-- topic name -->
         <arg name="cmd_vel" value="$(arg cmd_vel)"/>
         <arg name="footprint" value="$(arg footprint)"/>
