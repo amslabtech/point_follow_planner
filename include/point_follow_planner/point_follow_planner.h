@@ -1,23 +1,26 @@
-#ifndef Point_Follow_PLANNER_H
-#define Point_Follow_PLANNER_H
+// Copyright 2023 amsl
 
+#ifndef POINT_FOLLOW_PLANNER_POINT_FOLLOW_PLANNER_H
+#define POINT_FOLLOW_PLANNER_POINT_FOLLOW_PLANNER_H
+
+#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Twist.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
-#include <geometry_msgs/Twist.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseArray.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <string>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <vector>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <Eigen/Dense>
-
 
 class PointFollowPlanner
 {
@@ -35,74 +38,60 @@ protected:
         double yaw_;
         double velocity_;
         double yawrate_;
+
     private:
     };
 
     class Window
     {
     public:
-        Window(const double, const double, const double, const double);
+        Window(const double min_v, const double max_v, const double min_y, const double max_y);
         double min_velocity_;
         double max_velocity_;
         double min_yawrate_;
         double max_yawrate_;
+
     private:
     };
 
-
     // callback function
-    void goal_callback(const geometry_msgs::PoseStampedConstPtr& msg);
-    void footprint_callback(const geometry_msgs::PolygonStampedPtr& msg);
-    void local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg);
-    void odom_callback(const nav_msgs::OdometryConstPtr& msg);
-    void target_velocity_callback(const geometry_msgs::TwistConstPtr& msg);
-    void dist_to_goal_th_callback(const std_msgs::Float64ConstPtr& msg);
+    void goal_callback(const geometry_msgs::PoseStampedConstPtr &msg);
+    void footprint_callback(const geometry_msgs::PolygonStampedPtr &msg);
+    void local_map_callback(const nav_msgs::OccupancyGridConstPtr &msg);
+    void odom_callback(const nav_msgs::OdometryConstPtr &msg);
+    void target_velocity_callback(const geometry_msgs::TwistConstPtr &msg);
+    void dist_to_goal_th_callback(const std_msgs::Float64ConstPtr &msg);
 
     // others
-    void motion(State& state, const double velocity, const double yawrate);
-    void raycast(const nav_msgs::OccupancyGrid& map);
-    void generate_trajectory(std::vector<State>& trajectory, const double velocity, const double yawrate);
-    void generate_trajectory(std::vector<State>& trajectory, const double yawrate, const Eigen::Vector3d& goal);
-    void push_back_trajectory(std::vector<std::vector<State>>& trajectories, const double velocity, const double yawrate);
+    void motion(State &state, const double velocity, const double yawrate);
+    void raycast(const nav_msgs::OccupancyGrid &map);
+    void generate_trajectory(std::vector<State> &trajectory, const double velocity, const double yawrate);
+    void generate_trajectory(std::vector<State> &trajectory, const double yawrate, const Eigen::Vector3d &goal);
+    void
+    push_back_trajectory(std::vector<std::vector<State>> &trajectories, const double velocity, const double yawrate);
     void search_optimal_cmd_vel_for_goal(
-            double& optimal_velocity,
-            double& optimal_yawrate,
-            const Window dynamic_window,
-            const Eigen::Vector3d& goal,
-            std::vector<std::vector<State>>& trajectories);
+        double &optimal_velocity, double &optimal_yawrate, const Window dynamic_window, const Eigen::Vector3d &goal,
+        std::vector<std::vector<State>> &trajectories);
     void search_safety_trajectory(
-            std::vector<State>& optimal_traj,
-            const double optimal_velocity,
-            const double optimal_yawrate,
-            const Window dynamic_window,
-            const Eigen::Vector3d& goal);
+        std::vector<State> &optimal_traj, const double optimal_velocity, const double optimal_yawrate,
+        const Window dynamic_window, const Eigen::Vector3d &goal);
     bool can_move();
-    bool can_adjust_robot_direction(const Eigen::Vector3d& goal);
-    bool check_collision(const std::vector<State>& traj);
-    bool is_inside_of_triangle(const geometry_msgs::Point& target_point, const geometry_msgs::Polygon& triangle);
-    bool is_inside_of_robot(const geometry_msgs::Pose& obstacle, const State & state);
-    double calc_goal_cost(const std::vector<State>& traj, const Eigen::Vector3d& goal);
-    geometry_msgs::PolygonStamped transform_footprint(const State& target_pose);
-    void planning(
-            std::vector<State>& best_traj,
-            std::vector<std::vector<State>>& trajectories,
-            const Eigen::Vector3d& goal);
+    bool can_adjust_robot_direction(const Eigen::Vector3d &goal);
+    bool check_collision(const std::vector<State> &traj);
+    bool is_inside_of_triangle(const geometry_msgs::Point &target_point, const geometry_msgs::Polygon &triangle);
+    bool is_inside_of_robot(const geometry_msgs::Pose &obstacle, const State &state);
+    double calc_goal_cost(const std::vector<State> &traj, const Eigen::Vector3d &goal);
+    geometry_msgs::PolygonStamped transform_footprint(const State &target_pose);
+    void
+    planning(std::vector<State> &best_traj, std::vector<std::vector<State>> &trajectories, const Eigen::Vector3d &goal);
     geometry_msgs::Twist calc_cmd_vel();
-    Window calc_dynamic_window(const geometry_msgs::Twist& current_velocity);
+    Window calc_dynamic_window(const geometry_msgs::Twist &current_velocity);
     void visualize_trajectory(
-            const std::vector<State>& trajectory,
-            const double r,
-            const double g,
-            const double b,
-            const ros::Publisher& pub);
+        const std::vector<State> &trajectory, const double r, const double g, const double b,
+        const ros::Publisher &pub);
     void visualize_trajectories(
-            const std::vector<std::vector<State>>& trajectories,
-            const double r,
-            const double g,
-            const double b,
-            const int trajectories_size,
-            const ros::Publisher& pub);
-
+        const std::vector<std::vector<State>> &trajectories, const double r, const double g, const double b,
+        const int trajectories_size, const ros::Publisher &pub);
 
     // param
     double hz_;
@@ -127,11 +116,11 @@ protected:
     bool local_map_updated_;
     bool is_behind_obj_;
     bool has_reached_;
-    int local_map_not_sub_count_;
-    int odom_not_sub_count_;
-    int sub_count_th_;
     int velocity_samples_;
     int yawrate_samples_;
+    int subscribe_count_th_;
+    int odom_not_sub_count_;
+    int local_map_not_sub_count_;
 
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
@@ -159,4 +148,4 @@ protected:
     tf::TransformListener listener_;
 };
 
-#endif // Point_Follow_PLANNER_H
+#endif  // POINT_FOLLOW_PLANNER_POINT_FOLLOW_PLANNER_H

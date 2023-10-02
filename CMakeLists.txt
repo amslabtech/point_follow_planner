@@ -44,3 +44,14 @@ add_executable(point_follow_planner  src/point_follow_planner_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(point_follow_planner  ${roscpp_LIBRARIES} ${catkin_LIBRARIES} point_follow_planner_lib)
+
+
+#############
+## Testing ##
+#############
+if(CATKIN_ENABLE_TESTING)
+    find_package(rostest REQUIRED)
+    find_package(roslint REQUIRED)
+    roslint_cpp()
+    roslint_add_test()
+endif()
