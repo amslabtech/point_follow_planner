@@ -4,7 +4,7 @@
 
     <!-- param -->
     <arg name="hz" default="20"/>
-    <arg name="sub_count_th" default="3"/>
+    <arg name="subscribe_count_th" default="3"/>
     <arg name="planner_param" default="$(find point_follow_planner)/config/planner_param.yaml"/>
     <arg name="robot_param" default="$(find point_follow_planner)/config/robot_param.yaml"/>
     <!-- topic name -->
@@ -21,7 +21,7 @@
         <rosparam command="load" file="$(arg planner_param)"/>
         <rosparam command="load" file="$(arg robot_param)"/>
         <param name="hz" value="$(arg hz)"/>
-        <param name="sub_count_th" value="$(arg sub_count_th)"/>
+        <param name="subscribe_count_th" value="$(arg subscribe_count_th)"/>
         <!-- topic name -->
         <remap from="/cmd_vel" to="$(arg cmd_vel)"/>
         <remap from="/footprint" to="$(arg footprint)"/>
