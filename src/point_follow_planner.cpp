@@ -26,9 +26,9 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("dist_to_goal_th", dist_to_goal_th_, {0.3});
     private_nh_.param<double>("turn_direction_th", turn_direction_th_, {0.1});
     private_nh_.param<double>("obs_dist_th", obs_dist_th_, {1.0});
-    private_nh_.param<int>("subscribe_count_th", subscribe_count_th_, {3});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
+    private_nh_.param<int>("subscribe_count_th", subscribe_count_th_, {3});
 
     ROS_INFO("=== Point Followe Planner ===");
     ROS_INFO_STREAM("hz: " << hz_);
@@ -47,9 +47,9 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("dist_to_goal_th: " << dist_to_goal_th_);
     ROS_INFO_STREAM("turn_direction_th: " << turn_direction_th_);
     ROS_INFO_STREAM("obs_dist_th: " << obs_dist_th_);
-    ROS_INFO_STREAM("sub_count_th: " << subscribe_count_th_);
     ROS_INFO_STREAM("velocity_samples: " << velocity_samples_);
     ROS_INFO_STREAM("yawrate_samples: " << yawrate_samples_);
+    ROS_INFO_STREAM("subscribe_count_th: " << subscribe_count_th_);
 
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
