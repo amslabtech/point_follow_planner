@@ -8,7 +8,8 @@
 
 PointFollowPlanner::PointFollowPlanner(void)
     : private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false),
-      local_map_updated_(false), is_behind_obj_(false), local_map_not_sub_count_(0), odom_not_sub_count_(0)
+      local_map_updated_(false), is_behind_obj_(false), has_reached_(false), local_map_not_sub_count_(0),
+      odom_not_sub_count_(0)
 {
     private_nh_.param<double>("hz", hz_, {20});
     private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
@@ -387,7 +388,7 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
     std::vector<std::vector<State>> trajectories;
     const Eigen::Vector3d goal(goal_.pose.position.x, goal_.pose.position.y, tf::getYaw(goal_.pose.orientation));
 
-    if (dist_to_goal_th_ < goal.segment(0, 2).norm() || has_reached_)
+    if (dist_to_goal_th_ < goal.segment(0, 2).norm() && !has_reached_)
     {
         if (can_adjust_robot_direction(goal))
         {
@@ -406,10 +407,10 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
     }
     else
     {
+        has_reached_ = true;
         if (turn_direction_th_ < fabs(goal[2]))
         {
             cmd_vel.angular.z = std::min(std::max(goal[2], -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
-            has_reached_ = true;
         }
         else
         {
