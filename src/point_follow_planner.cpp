@@ -26,7 +26,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<double>("dist_to_goal_th", dist_to_goal_th_, {0.3});
     private_nh_.param<double>("turn_direction_th", turn_direction_th_, {0.1});
-    private_nh_.param<double>("obs_dist_th_x", obs_dist_th_x_, {1.0});
+    private_nh_.param<double>("dist_to_obj_th_x", dist_to_obj_th_x_, {1.0});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
     private_nh_.param<int>("subscribe_count_th", subscribe_count_th_, {3});
@@ -47,7 +47,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
     ROS_INFO_STREAM("dist_to_goal_th: " << dist_to_goal_th_);
     ROS_INFO_STREAM("turn_direction_th: " << turn_direction_th_);
-    ROS_INFO_STREAM("obs_dist_th_x: " << obs_dist_th_x_);
+    ROS_INFO_STREAM("dist_to_obj_th_x: " << dist_to_obj_th_x_);
     ROS_INFO_STREAM("velocity_samples: " << velocity_samples_);
     ROS_INFO_STREAM("yawrate_samples: " << yawrate_samples_);
     ROS_INFO_STREAM("subscribe_count_th: " << subscribe_count_th_);
@@ -89,7 +89,7 @@ void PointFollowPlanner::goal_callback(const geometry_msgs::PoseStampedConstPtr 
 
 void PointFollowPlanner::footprint_callback(const geometry_msgs::PolygonStampedPtr &msg)
 {
-    set_obs_dist_th_y(*msg);
+    set_dist_to_obj_th_y(*msg);
     footprint_ = *msg;
     footprint_subscribed_ = true;
 }
@@ -121,12 +121,12 @@ void PointFollowPlanner::dist_to_goal_th_callback(const std_msgs::Float64ConstPt
     ROS_INFO_THROTTLE(1.0, "distance to goal threshold was updated to %f [m]", dist_to_goal_th_);
 }
 
-void PointFollowPlanner::set_obs_dist_th_y(const geometry_msgs::PolygonStamped &footprint)
+void PointFollowPlanner::set_dist_to_obj_th_y(const geometry_msgs::PolygonStamped &footprint)
 {
     float max_y = 0.0;
     for (const auto &point : footprint.polygon.points)
         max_y = std::max(max_y, point.y);
-    obs_dist_th_y_ = max_y;
+    dist_to_obj_th_y_ = max_y;
 }
 
 void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid &map)
@@ -149,8 +149,8 @@ void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid &map)
                 if (map.data[index_x + index_y * map.info.width] == 100)
                 {
                     obs_list_.poses.push_back(pose);
-                    if ((0.0 < pose.position.x && pose.position.x < obs_dist_th_x_) &&
-                        fabs(pose.position.y) < obs_dist_th_y_)
+                    if ((0.0 < pose.position.x && pose.position.x < dist_to_obj_th_x_) &&
+                        fabs(pose.position.y) < dist_to_obj_th_y_)
                         is_behind_obj_ = true;
                     break;
                 }
