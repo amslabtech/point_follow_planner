@@ -6,6 +6,6 @@ dist_to_goal_th: 0.3
 turn_direction_th: 0.1
 angle_to_goal_th: 0.26
 max_yawrate_in_situ_turns: 0.4
-obs_dist_th: 1.0
+obs_dist_th_x: 1.0
 velocity_samples: 3
 yawrate_samples: 20
