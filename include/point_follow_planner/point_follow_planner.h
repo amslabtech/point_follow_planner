@@ -92,7 +92,10 @@ protected:
         const ros::Publisher &pub);
     void visualize_trajectories(
         const std::vector<std::vector<State>> &trajectories, const double r, const double g, const double b,
-        const int trajectories_size, const ros::Publisher &pub);
+        const ros::Publisher &pub);
+    void visualize_footprints(
+        const std::vector<State> &trajectory, const double r, const double g, const double b,
+        const ros::Publisher &pub);
 
     // param
     double hz_;
@@ -130,7 +133,7 @@ protected:
     ros::Publisher cmd_vel_pub_;
     ros::Publisher candidate_trajectories_pub_;
     ros::Publisher best_trajectory_pub_;
-    ros::Publisher predict_footprint_pub_;
+    ros::Publisher predict_footprints_pub_;
     ros::Publisher finish_flag_pub_;
     ros::Subscriber footprint_sub_;
     ros::Subscriber goal_sub_;

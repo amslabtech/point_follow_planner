@@ -55,7 +55,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
     candidate_trajectories_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("candidate_trajectories", 1);
-    predict_footprint_pub_ = private_nh_.advertise<geometry_msgs::PolygonStamped>("predict_footprint", 1);
+    predict_footprints_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("predict_footprints", 1);
     finish_flag_pub_ = private_nh_.advertise<std_msgs::Bool>("finish_flag", 1);
 
     footprint_sub_ = nh_.subscribe("/footprint", 1, &PointFollowPlanner::footprint_callback, this);
@@ -431,9 +431,9 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
         trajectories.push_back(best_traj);
     }
 
-    visualize_trajectory(best_traj, 1.0, 0.0, 0.0, best_trajectory_pub_);
-    visualize_trajectories(trajectories, 0.0, 1.0, 0.0, 1000, candidate_trajectories_pub_);
-    predict_footprint_pub_.publish(transform_footprint(best_traj.back()));
+    visualize_trajectory(best_traj, 1, 0, 0, best_trajectory_pub_);
+    visualize_trajectories(trajectories, 0, 1, 0, candidate_trajectories_pub_);
+    visualize_footprints(best_traj, 0, 0, 1, predict_footprints_pub_);
 
     return cmd_vel;
 }
@@ -532,12 +532,10 @@ void PointFollowPlanner::visualize_trajectory(
 
 void PointFollowPlanner::visualize_trajectories(
     const std::vector<std::vector<State>> &trajectories, const double r, const double g, const double b,
-    const int trajectories_size, const ros::Publisher &pub)
+    const ros::Publisher &pub)
 {
     visualization_msgs::MarkerArray v_trajectories;
-    int count = 0;
-
-    for (; count < trajectories.size(); count++)
+    for (int i = 0; i < trajectories.size(); i++)
     {
         visualization_msgs::Marker v_trajectory;
         v_trajectory.header.frame_id = robot_frame_;
@@ -550,13 +548,13 @@ void PointFollowPlanner::visualize_trajectories(
         v_trajectory.type = visualization_msgs::Marker::LINE_STRIP;
         v_trajectory.action = visualization_msgs::Marker::ADD;
         v_trajectory.lifetime = ros::Duration();
-        v_trajectory.id = count;
+        v_trajectory.id = i;
         v_trajectory.scale.x = 0.02;
         geometry_msgs::Pose pose;
         pose.orientation.w = 1;
         v_trajectory.pose = pose;
         geometry_msgs::Point p;
-        for (const auto &pose : trajectories[count])
+        for (const auto &pose : trajectories[i])
         {
             p.x = pose.x_;
             p.y = pose.y_;
@@ -564,19 +562,43 @@ void PointFollowPlanner::visualize_trajectories(
         }
         v_trajectories.markers.push_back(v_trajectory);
     }
-
-    for (; count < trajectories_size; count++)
-    {
-        visualization_msgs::Marker v_trajectory;
-        v_trajectory.header.frame_id = robot_frame_;
-        v_trajectory.header.stamp = ros::Time::now();
-        v_trajectory.ns = pub.getTopic();
-        v_trajectory.type = visualization_msgs::Marker::LINE_STRIP;
-        v_trajectory.action = visualization_msgs::Marker::DELETE;
-        v_trajectory.lifetime = ros::Duration();
-        v_trajectory.id = count;
-        v_trajectories.markers.push_back(v_trajectory);
-    }
-
     pub.publish(v_trajectories);
+}
+
+void PointFollowPlanner::visualize_footprints(
+    const std::vector<State> &trajectory, const double r, const double g, const double b, const ros::Publisher &pub)
+{
+    visualization_msgs::MarkerArray v_footprints;
+    for (int i = 0; i < trajectory.size(); i++)
+    {
+        visualization_msgs::Marker v_footprint;
+        v_footprint.header.frame_id = robot_frame_;
+        v_footprint.header.stamp = ros::Time::now();
+        v_footprint.color.r = r;
+        v_footprint.color.g = g;
+        v_footprint.color.b = b;
+        v_footprint.color.a = 0.8;
+        v_footprint.ns = pub.getTopic();
+        v_footprint.type = visualization_msgs::Marker::LINE_STRIP;
+        v_footprint.action = visualization_msgs::Marker::ADD;
+        v_footprint.lifetime = ros::Duration();
+        v_footprint.id = i;
+        v_footprint.scale.x = 0.01;
+        geometry_msgs::Pose pose;
+        pose.orientation.w = 1;
+        v_footprint.pose = pose;
+        geometry_msgs::Point p;
+        const geometry_msgs::PolygonStamped footprint = transform_footprint(trajectory[i]);
+        for (const auto &point : footprint.polygon.points)
+        {
+            p.x = point.x;
+            p.y = point.y;
+            v_footprint.points.push_back(p);
+        }
+        p.x = footprint.polygon.points.front().x;
+        p.y = footprint.polygon.points.front().y;
+        v_footprint.points.push_back(p);
+        v_footprints.markers.push_back(v_footprint);
+    }
+    pub.publish(v_footprints);
 }
