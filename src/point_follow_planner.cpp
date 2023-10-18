@@ -315,15 +315,16 @@ void PointFollowPlanner::search_optimal_cmd_vel_for_goal(
 {
     float min_cost = 1e6;
     const double velocity_resolution =
-        (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / velocity_samples_;
-    const double yawrate_resolution = (dynamic_window.max_yawrate_ - dynamic_window.min_yawrate_) / yawrate_samples_;
+        (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / (velocity_samples_ - 1);
+    const double yawrate_resolution =
+        (dynamic_window.max_yawrate_ - dynamic_window.min_yawrate_) / (yawrate_samples_ - 1);
 
-    for (double velocity = dynamic_window.min_velocity_; velocity <= dynamic_window.max_velocity_;
-         velocity += velocity_resolution)
+    for (int i = 0; i < velocity_samples_; i++)
     {
-        for (double yawrate = dynamic_window.min_yawrate_; yawrate <= dynamic_window.max_yawrate_;
-             yawrate += yawrate_resolution)
+        const double velocity = dynamic_window.min_velocity_ + velocity_resolution * i;
+        for (int j = 0; j < yawrate_samples_; j++)
         {
+            const double yawrate = dynamic_window.min_yawrate_ + yawrate_resolution * j;
             push_back_trajectory(trajectories, velocity, yawrate);
             const double goal_cost = calc_goal_cost(trajectories.back(), goal);
             if (goal_cost <= min_cost)
@@ -354,10 +355,11 @@ void PointFollowPlanner::search_safety_trajectory(
 {
     bool is_found_safety_traj = false;
     const double velocity_resolution =
-        (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / velocity_samples_;
+        (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / (velocity_samples_ - 1);
 
-    for (double velocity = dynamic_window.min_velocity_; velocity <= optimal_velocity; velocity += velocity_resolution)
+    for (int i = 0; i < velocity_samples_; i++)
     {
+        const double velocity = dynamic_window.min_velocity_ + velocity_resolution * i;
         generate_trajectory(optimal_traj, velocity, optimal_yawrate);
         if (!check_collision(optimal_traj))
             is_found_safety_traj = true;
