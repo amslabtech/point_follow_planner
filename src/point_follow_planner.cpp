@@ -18,7 +18,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
     private_nh_.param<double>("max_yawrate_in_situ_turns", max_yawrate_in_situ_turns_, max_yawrate_);
-    private_nh_.param<double>("max_acceleration", max_acceleration_, {1.0});
+    private_nh_.param<double>("max_acceleration", max_acceleration_, {0.5});
     private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {3.2});
     private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
     private_nh_.param<double>("predict_time", predict_time_, {3.0});
