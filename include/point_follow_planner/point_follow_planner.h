@@ -82,7 +82,7 @@ protected:
     bool is_inside_of_robot(const geometry_msgs::Pose &obstacle, const State &state);
     double calc_goal_cost(const std::vector<State> &traj, const Eigen::Vector3d &goal);
     geometry_msgs::PolygonStamped transform_footprint(const State &target_pose);
-    void set_dist_to_obj_th_y(const geometry_msgs::PolygonStamped &footprint);
+    void set_dist_to_obj_th(const geometry_msgs::PolygonStamped &footprint);
     void
     planning(std::vector<State> &best_traj, std::vector<std::vector<State>> &trajectories, const Eigen::Vector3d &goal);
     geometry_msgs::Twist calc_cmd_vel();
@@ -113,6 +113,7 @@ protected:
     double angle_to_goal_th_;
     double dist_to_goal_th_;
     double turn_direction_th_;
+    double dist_from_head_to_obj_;
     double dist_to_obj_th_x_;
     double dist_to_obj_th_y_;
     bool goal_subscribed_;

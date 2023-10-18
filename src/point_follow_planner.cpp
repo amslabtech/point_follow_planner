@@ -26,7 +26,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<double>("dist_to_goal_th", dist_to_goal_th_, {0.3});
     private_nh_.param<double>("turn_direction_th", turn_direction_th_, {0.1});
-    private_nh_.param<double>("dist_to_obj_th_x", dist_to_obj_th_x_, {1.0});
+    private_nh_.param<double>("dist_from_head_to_obj", dist_from_head_to_obj_, {0.5});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
     private_nh_.param<int>("subscribe_count_th", subscribe_count_th_, {3});
@@ -89,7 +89,7 @@ void PointFollowPlanner::goal_callback(const geometry_msgs::PoseStampedConstPtr 
 
 void PointFollowPlanner::footprint_callback(const geometry_msgs::PolygonStampedPtr &msg)
 {
-    set_dist_to_obj_th_y(*msg);
+    set_dist_to_obj_th(*msg);
     footprint_ = *msg;
     footprint_subscribed_ = true;
 }
@@ -121,11 +121,16 @@ void PointFollowPlanner::dist_to_goal_th_callback(const std_msgs::Float64ConstPt
     ROS_INFO_THROTTLE(1.0, "distance to goal threshold was updated to %f [m]", dist_to_goal_th_);
 }
 
-void PointFollowPlanner::set_dist_to_obj_th_y(const geometry_msgs::PolygonStamped &footprint)
+void PointFollowPlanner::set_dist_to_obj_th(const geometry_msgs::PolygonStamped &footprint)
 {
+    float max_x = 0.0;
     float max_y = 0.0;
     for (const auto &point : footprint.polygon.points)
+    {
+        max_x = std::max(max_x, point.x);
         max_y = std::max(max_y, point.y);
+    }
+    dist_to_obj_th_x_ = max_x + dist_from_head_to_obj_;
     dist_to_obj_th_y_ = max_y;
 }
 
