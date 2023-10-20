@@ -101,6 +101,7 @@ protected:
     double hz_;
     std::string robot_frame_;
     double target_velocity_;
+    double velocity_th_for_stop_behind_obj_;
     double max_velocity_;
     double min_velocity_;
     double max_yawrate_;

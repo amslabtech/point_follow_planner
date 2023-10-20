@@ -1,11 +1,11 @@
 target_velocity: 1.0
+velocity_th_for_stop_behind_obj: 0.15
 predict_time: 3.0
 dt: 0.1
 angle_resolution: 0.0087
 dist_to_goal_th: 0.3
 turn_direction_th: 0.1
 angle_to_goal_th: 0.26
-min_in_place_yawrate: 0.3
 dist_from_head_to_obj: 0.5
 velocity_samples: 3
 yawrate_samples: 20
