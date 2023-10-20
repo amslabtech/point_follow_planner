@@ -4,4 +4,5 @@ min_velocity: 0.0
 max_yawrate: 1.0
 min_in_place_yawrate: 0.3
 max_acceleration: 0.5
+max_deceleration: 1.0
 max_d_yawrate: 3.2

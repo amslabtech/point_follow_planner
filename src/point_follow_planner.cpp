@@ -19,6 +19,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
     private_nh_.param<double>("min_in_place_yawrate", min_in_place_yawrate_, {0.3});
     private_nh_.param<double>("max_acceleration", max_acceleration_, {0.5});
+    private_nh_.param<double>("max_deceleration", max_deceleration_, {1.0});
     private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {3.2});
     private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
     private_nh_.param<double>("predict_time", predict_time_, {3.0});
@@ -40,6 +41,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
     ROS_INFO_STREAM("min_in_place_yawrate: " << min_in_place_yawrate_);
     ROS_INFO_STREAM("max_acceleration: " << max_acceleration_);
+    ROS_INFO_STREAM("max_deceleration: " << max_deceleration_);
     ROS_INFO_STREAM("max_d_yawrate: " << max_d_yawrate_);
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
     ROS_INFO_STREAM("predict_time: " << predict_time_);
@@ -167,7 +169,7 @@ void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid &map)
 PointFollowPlanner::Window PointFollowPlanner::calc_dynamic_window(const geometry_msgs::Twist &current_velocity)
 {
     Window window(min_velocity_, max_velocity_, -max_yawrate_, max_yawrate_);
-    window.min_velocity_ = std::max((current_velocity.linear.x - max_acceleration_ * dt_), min_velocity_);
+    window.min_velocity_ = std::max((current_velocity.linear.x - max_deceleration_ * dt_), min_velocity_);
     window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_ * dt_), target_velocity_);
     window.min_yawrate_ = std::max((current_velocity.angular.z - max_d_yawrate_ * dt_), -max_yawrate_);
     window.max_yawrate_ = std::min((current_velocity.angular.z + max_d_yawrate_ * dt_), max_yawrate_);

@@ -106,6 +106,7 @@ protected:
     double max_yawrate_;
     double min_in_place_yawrate_;
     double max_acceleration_;
+    double max_deceleration_;
     double max_d_yawrate_;
     double angle_resolution_;
     double predict_time_;
