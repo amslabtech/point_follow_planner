@@ -357,7 +357,7 @@ void PointFollowPlanner::search_safety_trajectory(
 {
     bool is_found_safety_traj = false;
     const double velocity_resolution =
-        (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / (velocity_samples_ - 1);
+        (optimal_velocity - dynamic_window.min_velocity_) / (velocity_samples_ - 1);
 
     for (int i = 0; i < velocity_samples_; i++)
     {
