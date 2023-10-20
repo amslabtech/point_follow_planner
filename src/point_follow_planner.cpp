@@ -17,7 +17,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("max_velocity", max_velocity_, {0.55});
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
-    private_nh_.param<double>("max_yawrate_in_situ_turns", max_yawrate_in_situ_turns_, max_yawrate_);
+    private_nh_.param<double>("min_in_place_yawrate", min_in_place_yawrate_, {0.3});
     private_nh_.param<double>("max_acceleration", max_acceleration_, {0.5});
     private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {3.2});
     private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
@@ -38,7 +38,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("max_velocity: " << max_velocity_);
     ROS_INFO_STREAM("min_velocity: " << min_velocity_);
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
-    ROS_INFO_STREAM("max_yawrate_in_situ_turns: " << max_yawrate_in_situ_turns_);
+    ROS_INFO_STREAM("min_in_place_yawrate: " << min_in_place_yawrate_);
     ROS_INFO_STREAM("max_acceleration: " << max_acceleration_);
     ROS_INFO_STREAM("max_d_yawrate: " << max_d_yawrate_);
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
@@ -411,7 +411,9 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
         {
             const double angle_to_goal = atan2(goal.y(), goal.x());
             cmd_vel.angular.z =
-                std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
+                angle_to_goal > 0 ? std::min(angle_to_goal, max_yawrate_) : std::max(angle_to_goal, -max_yawrate_);
+            cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
+                                                      : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
             generate_trajectory(best_traj, cmd_vel.angular.z, goal);
             trajectories.push_back(best_traj);
         }
@@ -427,7 +429,9 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
         has_reached_ = true;
         if (turn_direction_th_ < fabs(goal[2]))
         {
-            cmd_vel.angular.z = std::min(std::max(goal[2], -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
+            cmd_vel.angular.z = goal[2] > 0 ? std::min(goal[2], max_yawrate_) : std::max(goal[2], -max_yawrate_);
+            cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
+                                                      : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
         }
         else
         {
@@ -451,7 +455,9 @@ bool PointFollowPlanner::can_adjust_robot_direction(const Eigen::Vector3d &goal)
     if (fabs(angle_to_goal) < angle_to_goal_th_)
         return false;
 
-    const double yawrate = std::min(std::max(angle_to_goal, -max_yawrate_in_situ_turns_), max_yawrate_in_situ_turns_);
+    double yawrate = angle_to_goal > 0 ? std::min(angle_to_goal, max_yawrate_) : std::max(angle_to_goal, -max_yawrate_);
+    yawrate = yawrate > 0 ? std::max(yawrate, min_in_place_yawrate_) : std::min(yawrate, -min_in_place_yawrate_);
+
     std::vector<State> traj;
     generate_trajectory(traj, yawrate, goal);
 
