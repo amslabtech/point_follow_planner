@@ -5,7 +5,7 @@ angle_resolution: 0.0087
 dist_to_goal_th: 0.3
 turn_direction_th: 0.1
 angle_to_goal_th: 0.26
-max_yawrate_in_situ_turns: 0.4
+min_in_place_yawrate: 0.3
 dist_from_head_to_obj: 0.5
 velocity_samples: 3
 yawrate_samples: 20
