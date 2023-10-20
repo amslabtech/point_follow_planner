@@ -14,11 +14,13 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("hz", hz_, {20});
     private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
     private_nh_.param<double>("target_velocity", target_velocity_, {0.55});
+    private_nh_.param<double>("velocity_th_for_stop_behind_obj", velocity_th_for_stop_behind_obj_, {0.15});
     private_nh_.param<double>("max_velocity", max_velocity_, {0.55});
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
     private_nh_.param<double>("min_in_place_yawrate", min_in_place_yawrate_, {0.3});
     private_nh_.param<double>("max_acceleration", max_acceleration_, {0.5});
+    private_nh_.param<double>("max_deceleration", max_deceleration_, {1.0});
     private_nh_.param<double>("max_d_yawrate", max_d_yawrate_, {3.2});
     private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
     private_nh_.param<double>("predict_time", predict_time_, {3.0});
@@ -35,11 +37,13 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("hz: " << hz_);
     ROS_INFO_STREAM("robot_frame: " << robot_frame_);
     ROS_INFO_STREAM("target_velocity: " << target_velocity_);
+    ROS_INFO_STREAM("velocity_th_for_stop_behind_obj: " << velocity_th_for_stop_behind_obj_);
     ROS_INFO_STREAM("max_velocity: " << max_velocity_);
     ROS_INFO_STREAM("min_velocity: " << min_velocity_);
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
     ROS_INFO_STREAM("min_in_place_yawrate: " << min_in_place_yawrate_);
     ROS_INFO_STREAM("max_acceleration: " << max_acceleration_);
+    ROS_INFO_STREAM("max_deceleration: " << max_deceleration_);
     ROS_INFO_STREAM("max_d_yawrate: " << max_d_yawrate_);
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
     ROS_INFO_STREAM("predict_time: " << predict_time_);
@@ -103,6 +107,7 @@ void PointFollowPlanner::local_map_callback(const nav_msgs::OccupancyGridConstPt
 
 void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr &msg)
 {
+    previous_velocity_ = current_velocity_;
     current_velocity_ = msg->twist.twist;
     current_velocity_.linear.x = std::max(current_velocity_.linear.x, 0.0);
     odom_not_sub_count_ = 0;
@@ -167,7 +172,7 @@ void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid &map)
 PointFollowPlanner::Window PointFollowPlanner::calc_dynamic_window(const geometry_msgs::Twist &current_velocity)
 {
     Window window(min_velocity_, max_velocity_, -max_yawrate_, max_yawrate_);
-    window.min_velocity_ = std::max((current_velocity.linear.x - max_acceleration_ * dt_), min_velocity_);
+    window.min_velocity_ = std::max((current_velocity.linear.x - max_deceleration_ * dt_), min_velocity_);
     window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_ * dt_), target_velocity_);
     window.min_yawrate_ = std::max((current_velocity.angular.z - max_d_yawrate_ * dt_), -max_yawrate_);
     window.max_yawrate_ = std::min((current_velocity.angular.z + max_d_yawrate_ * dt_), max_yawrate_);
@@ -355,7 +360,7 @@ void PointFollowPlanner::search_safety_trajectory(
 {
     bool is_found_safety_traj = false;
     const double velocity_resolution =
-        (dynamic_window.max_velocity_ - dynamic_window.min_velocity_) / (velocity_samples_ - 1);
+        (optimal_velocity - dynamic_window.min_velocity_) / (velocity_samples_ - 1);
 
     for (int i = 0; i < velocity_samples_; i++)
     {
@@ -377,7 +382,7 @@ void PointFollowPlanner::planning(
     const Window dynamic_window = calc_dynamic_window(current_velocity_);
     geometry_msgs::Twist cmd_vel;
 
-    if (previous_velocity_.linear.x < max_acceleration_ * dt_ + DBL_EPSILON && is_behind_obj_)
+    if (previous_velocity_.linear.x < velocity_th_for_stop_behind_obj_ && is_behind_obj_)
     {
         ROS_WARN_THROTTLE(1.0, "##########################");
         ROS_WARN_THROTTLE(1.0, "### stop behind object ###");
@@ -502,7 +507,6 @@ void PointFollowPlanner::process()
         cmd_vel_pub_.publish(cmd_vel);
         finish_flag_pub_.publish(has_finished);
 
-        previous_velocity_ = cmd_vel;
         odom_updated_ = false;
         local_map_updated_ = false;
         is_behind_obj_ = false;

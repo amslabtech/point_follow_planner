@@ -101,11 +101,13 @@ protected:
     double hz_;
     std::string robot_frame_;
     double target_velocity_;
+    double velocity_th_for_stop_behind_obj_;
     double max_velocity_;
     double min_velocity_;
     double max_yawrate_;
     double min_in_place_yawrate_;
     double max_acceleration_;
+    double max_deceleration_;
     double max_d_yawrate_;
     double angle_resolution_;
     double predict_time_;
