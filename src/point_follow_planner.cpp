@@ -37,6 +37,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("hz: " << hz_);
     ROS_INFO_STREAM("robot_frame: " << robot_frame_);
     ROS_INFO_STREAM("target_velocity: " << target_velocity_);
+    ROS_INFO_STREAM("velocity_th_for_stop_behind_obj: " << velocity_th_for_stop_behind_obj_);
     ROS_INFO_STREAM("max_velocity: " << max_velocity_);
     ROS_INFO_STREAM("min_velocity: " << min_velocity_);
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
