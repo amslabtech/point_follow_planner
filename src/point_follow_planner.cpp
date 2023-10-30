@@ -25,6 +25,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("angle_resolution", angle_resolution_, {0.2});
     private_nh_.param<double>("predict_time", predict_time_, {3.0});
     private_nh_.param<double>("dt", dt_, {0.1});
+    private_nh_.param<double>("sleep_time_after_finish", sleep_time_after_finish_, {0.5});
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<double>("dist_to_goal_th", dist_to_goal_th_, {0.3});
     private_nh_.param<double>("turn_direction_th", turn_direction_th_, {0.1});
@@ -48,6 +49,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("angle_resolution: " << angle_resolution_);
     ROS_INFO_STREAM("predict_time: " << predict_time_);
     ROS_INFO_STREAM("dt: " << dt_);
+    ROS_INFO_STREAM("sleep_time_after_finish: " << sleep_time_after_finish_);
     ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
     ROS_INFO_STREAM("dist_to_goal_th: " << dist_to_goal_th_);
     ROS_INFO_STREAM("turn_direction_th: " << turn_direction_th_);
@@ -440,7 +442,7 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
         }
         else
         {
-            has_finished.data = true;
+            has_finished_.data = true;
             has_reached_ = false;
         }
         generate_trajectory(best_traj, cmd_vel.linear.x, cmd_vel.angular.z);
@@ -505,12 +507,14 @@ void PointFollowPlanner::process()
         if (can_move())
             cmd_vel = calc_cmd_vel();
         cmd_vel_pub_.publish(cmd_vel);
-        finish_flag_pub_.publish(has_finished);
+        finish_flag_pub_.publish(has_finished_);
+        if (has_finished_.data)
+            ros::Duration(sleep_time_after_finish_).sleep();
 
         odom_updated_ = false;
         local_map_updated_ = false;
         is_behind_obj_ = false;
-        has_finished.data = false;
+        has_finished_.data = false;
 
         ros::spinOnce();
         loop_rate.sleep();

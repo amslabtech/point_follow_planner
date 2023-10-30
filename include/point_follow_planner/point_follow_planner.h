@@ -112,6 +112,7 @@ protected:
     double angle_resolution_;
     double predict_time_;
     double dt_;
+    double sleep_time_after_finish_;
     double angle_to_goal_th_;
     double dist_to_goal_th_;
     double turn_direction_th_;
@@ -151,7 +152,7 @@ protected:
     geometry_msgs::Twist current_velocity_;
     geometry_msgs::Twist previous_velocity_;
 
-    std_msgs::Bool has_finished;
+    std_msgs::Bool has_finished_;
 
     tf::TransformListener listener_;
 };
