@@ -18,7 +18,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("max_velocity", max_velocity_, {0.55});
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
-    private_nh_.param<double>("min_yawrate", min_yawrate_, {0.1});
+    private_nh_.param<double>("min_yawrate", min_yawrate_, {0.05});
     private_nh_.param<double>("min_in_place_yawrate", min_in_place_yawrate_, {0.3});
     private_nh_.param<double>("max_acceleration", max_acceleration_, {0.5});
     private_nh_.param<double>("max_deceleration", max_deceleration_, {1.0});
@@ -30,7 +30,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<double>("dist_to_goal_th", dist_to_goal_th_, {0.3});
     private_nh_.param<double>("turn_direction_th", turn_direction_th_, {0.1});
-    private_nh_.param<double>("slow_velocity_th", slow_velocity_th_, {0.2});
+    private_nh_.param<double>("slow_velocity_th", slow_velocity_th_, {0.1});
     private_nh_.param<double>("dist_from_head_to_obj", dist_from_head_to_obj_, {0.5});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
