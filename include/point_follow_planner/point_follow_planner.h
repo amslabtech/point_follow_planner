@@ -105,6 +105,7 @@ protected:
     double max_velocity_;
     double min_velocity_;
     double max_yawrate_;
+    double min_yawrate_;
     double min_in_place_yawrate_;
     double max_acceleration_;
     double max_deceleration_;
@@ -116,6 +117,7 @@ protected:
     double angle_to_goal_th_;
     double dist_to_goal_th_;
     double turn_direction_th_;
+    double slow_velocity_th_;
     double dist_from_head_to_obj_;
     double dist_to_obj_th_x_;
     double dist_to_obj_th_y_;

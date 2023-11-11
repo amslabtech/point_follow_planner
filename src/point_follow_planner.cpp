@@ -18,6 +18,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("max_velocity", max_velocity_, {0.55});
     private_nh_.param<double>("min_velocity", min_velocity_, {0.0});
     private_nh_.param<double>("max_yawrate", max_yawrate_, {1.0});
+    private_nh_.param<double>("min_yawrate", min_yawrate_, {0.1});
     private_nh_.param<double>("min_in_place_yawrate", min_in_place_yawrate_, {0.3});
     private_nh_.param<double>("max_acceleration", max_acceleration_, {0.5});
     private_nh_.param<double>("max_deceleration", max_deceleration_, {1.0});
@@ -29,6 +30,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     private_nh_.param<double>("angle_to_goal_th", angle_to_goal_th_, {0.26});
     private_nh_.param<double>("dist_to_goal_th", dist_to_goal_th_, {0.3});
     private_nh_.param<double>("turn_direction_th", turn_direction_th_, {0.1});
+    private_nh_.param<double>("slow_velocity_th", slow_velocity_th_, {0.2});
     private_nh_.param<double>("dist_from_head_to_obj", dist_from_head_to_obj_, {0.5});
     private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
     private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
@@ -42,6 +44,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("max_velocity: " << max_velocity_);
     ROS_INFO_STREAM("min_velocity: " << min_velocity_);
     ROS_INFO_STREAM("max_yawrate: " << max_yawrate_);
+    ROS_INFO_STREAM("min_yawrate: " << min_yawrate_);
     ROS_INFO_STREAM("min_in_place_yawrate: " << min_in_place_yawrate_);
     ROS_INFO_STREAM("max_acceleration: " << max_acceleration_);
     ROS_INFO_STREAM("max_deceleration: " << max_deceleration_);
@@ -53,6 +56,7 @@ PointFollowPlanner::PointFollowPlanner(void)
     ROS_INFO_STREAM("angle_to_goal_th: " << angle_to_goal_th_);
     ROS_INFO_STREAM("dist_to_goal_th: " << dist_to_goal_th_);
     ROS_INFO_STREAM("turn_direction_th: " << turn_direction_th_);
+    ROS_INFO_STREAM("slow_velocity_th: " << slow_velocity_th_);
     ROS_INFO_STREAM("dist_to_obj_th_x: " << dist_to_obj_th_x_);
     ROS_INFO_STREAM("velocity_samples: " << velocity_samples_);
     ROS_INFO_STREAM("yawrate_samples: " << yawrate_samples_);
@@ -331,7 +335,9 @@ void PointFollowPlanner::search_optimal_cmd_vel_for_goal(
         const double velocity = dynamic_window.min_velocity_ + velocity_resolution * i;
         for (int j = 0; j < yawrate_samples_; j++)
         {
-            const double yawrate = dynamic_window.min_yawrate_ + yawrate_resolution * j;
+            double yawrate = dynamic_window.min_yawrate_ + yawrate_resolution * j;
+            if (velocity < slow_velocity_th_)
+                yawrate = yawrate > 0 ? std::max(yawrate, min_yawrate_) : std::min(yawrate, -min_yawrate_);
             push_back_trajectory(trajectories, velocity, yawrate);
             const double goal_cost = calc_goal_cost(trajectories.back(), goal);
             if (goal_cost <= min_cost)
