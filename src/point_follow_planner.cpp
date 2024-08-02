@@ -115,8 +115,6 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr &msg)
 {
   previous_velocity_ = current_velocity_;
   current_velocity_ = msg->twist.twist;
-  current_velocity_.linear.x =
-      target_velocity_ >= 0.0 ? std::max(current_velocity_.linear.x, 0.0) : std::min(current_velocity_.linear.x, 0.0);
   odom_not_sub_count_ = 0;
   odom_updated_ = true;
 }
