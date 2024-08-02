@@ -211,16 +211,14 @@ PointFollowPlanner::Window PointFollowPlanner::calc_dynamic_window(const geometr
   {
     window.min_velocity_ = std::max((current_velocity.linear.x - max_deceleration_ * dt_), min_velocity_);
     window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_ * dt_), target_velocity_);
-    window.min_yawrate_ = std::max((current_velocity.angular.z - max_d_yawrate_ * dt_), -max_yawrate_);
-    window.max_yawrate_ = std::min((current_velocity.angular.z + max_d_yawrate_ * dt_), max_yawrate_);
   }
   else
   {
     window.min_velocity_ = std::max((current_velocity.linear.x - max_deceleration_ * dt_), target_velocity_);
     window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_ * dt_), max_velocity_);
-    window.min_yawrate_ = std::max((current_velocity.angular.z - max_d_yawrate_ * dt_), -max_yawrate_);
-    window.max_yawrate_ = std::min((current_velocity.angular.z + max_d_yawrate_ * dt_), max_yawrate_);
   }
+  window.min_yawrate_ = std::max((current_velocity.angular.z - max_d_yawrate_ * dt_), -max_yawrate_);
+  window.max_yawrate_ = std::min((current_velocity.angular.z + max_d_yawrate_ * dt_), max_yawrate_);
 
   return window;
 }
@@ -343,7 +341,12 @@ void PointFollowPlanner::generate_trajectory(
   trajectory.clear();
   State state;
   const double angle_to_goal = atan2(goal.y(), goal.x());
-  const double predict_time = angle_to_goal / (yawrate + DBL_EPSILON);
+  double predict_time;
+  if (target_velocity_ >= 0.0)
+    predict_time = fabs(angle_to_goal / (yawrate + DBL_EPSILON));
+  else
+    predict_time = fabs((M_PI - fabs(angle_to_goal)) / (yawrate + DBL_EPSILON));
+
   for (float t = 0; t <= predict_time; t += dt_)
   {
     motion(state, 0.0, yawrate);
