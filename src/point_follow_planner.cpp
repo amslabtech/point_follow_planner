@@ -123,7 +123,7 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr &msg)
 
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr &msg)
 {
-  if (target_velocity_ >= 0.0)
+  if (msg->linear.x >= 0.0)
   {
     if (max_velocity_ < 0.0)
     {
@@ -135,7 +135,7 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
   }
   else
   {
-    if (max_velocity_ >= 0.0)
+    if (max_velocity_ > 0.0)
     {
       const double tmp = min_velocity_;
       min_velocity_ = -max_velocity_;
