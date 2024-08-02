@@ -343,7 +343,7 @@ void PointFollowPlanner::generate_trajectory(
   trajectory.clear();
   State state;
   const double angle_to_goal = atan2(goal.y(), goal.x());
-  const double predict_time = angle_to_goal / yawrate;
+  const double predict_time = angle_to_goal / (yawrate + DBL_EPSILON);
   for (float t = 0; t <= predict_time; t += dt_)
   {
     motion(state, 0.0, yawrate);
