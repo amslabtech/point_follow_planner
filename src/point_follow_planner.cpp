@@ -472,9 +472,16 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   else
   {
     has_reached_ = true;
-    if (turn_direction_th_ < fabs(goal[2]))
+    if (target_velocity_ >= 0.0 && turn_direction_th_ < fabs(goal[2]))
     {
       cmd_vel.angular.z = goal[2] > 0 ? std::min(goal[2], max_yawrate_) : std::max(goal[2], -max_yawrate_);
+      cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
+                                                : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
+    }
+    else if (target_velocity_ < 0.0 && turn_direction_th_ < M_PI - fabs(goal[2]))
+    {
+      cmd_vel.angular.z =
+          goal[2] > 0 ? std::max(-M_PI + goal[2], -max_yawrate_) : std::min(M_PI + goal[2], max_yawrate_);
       cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
                                                 : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
     }
@@ -497,10 +504,21 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
 bool PointFollowPlanner::can_adjust_robot_direction(const Eigen::Vector3d &goal)
 {
   const double angle_to_goal = atan2(goal.y(), goal.x());
-  if (fabs(angle_to_goal) < angle_to_goal_th_)
-    return false;
+  double yawrate;
+  if (target_velocity_ >= 0.0)
+  {
+    if (fabs(angle_to_goal) < angle_to_goal_th_)
+      return false;
+    yawrate = angle_to_goal > 0 ? std::min(angle_to_goal, max_yawrate_) : std::max(angle_to_goal, -max_yawrate_);
+  }
+  else
+  {
+    if (M_PI - fabs(angle_to_goal) < angle_to_goal_th_)
+      return false;
+    yawrate = angle_to_goal > 0 ? std::max(-M_PI + angle_to_goal, -max_yawrate_)
+                                : std::min(M_PI + angle_to_goal, max_yawrate_);
+  }
 
-  double yawrate = angle_to_goal > 0 ? std::min(angle_to_goal, max_yawrate_) : std::max(angle_to_goal, -max_yawrate_);
   yawrate = yawrate > 0 ? std::max(yawrate, min_in_place_yawrate_) : std::min(yawrate, -min_in_place_yawrate_);
 
   std::vector<State> traj;
