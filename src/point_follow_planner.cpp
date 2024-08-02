@@ -455,8 +455,16 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
     if (can_adjust_robot_direction(goal))
     {
       const double angle_to_goal = atan2(goal.y(), goal.x());
-      cmd_vel.angular.z =
-          angle_to_goal > 0 ? std::min(angle_to_goal, max_yawrate_) : std::max(angle_to_goal, -max_yawrate_);
+      if (target_velocity_ >= 0.0)
+      {
+        cmd_vel.angular.z =
+            angle_to_goal > 0 ? std::min(angle_to_goal, max_yawrate_) : std::max(angle_to_goal, -max_yawrate_);
+      }
+      else
+      {
+        cmd_vel.angular.z = angle_to_goal > 0 ? std::max(-M_PI + angle_to_goal, -max_yawrate_)
+                                              : std::min(M_PI + angle_to_goal, max_yawrate_);
+      }
       cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
                                                 : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
       generate_trajectory(best_traj, cmd_vel.angular.z, goal);
