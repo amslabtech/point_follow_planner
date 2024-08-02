@@ -135,7 +135,6 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
   }
   else
   {
-    ROS_WARN("target velocity is negative");
     if (max_velocity_ >= 0.0)
     {
       const double tmp = min_velocity_;
