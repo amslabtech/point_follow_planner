@@ -609,7 +609,7 @@ void PointFollowPlanner::visualize_trajectory(
   v_trajectory.ns = pub.getTopic();
   v_trajectory.type = visualization_msgs::Marker::LINE_STRIP;
   v_trajectory.action = visualization_msgs::Marker::ADD;
-  v_trajectory.lifetime = ros::Duration();
+  v_trajectory.lifetime = ros::Duration(1 / hz_);
   v_trajectory.scale.x = 0.05;
   geometry_msgs::Pose pose;
   pose.orientation.w = 1;
@@ -643,7 +643,7 @@ void PointFollowPlanner::visualize_trajectories(
     v_trajectory.ns = pub.getTopic();
     v_trajectory.type = visualization_msgs::Marker::LINE_STRIP;
     v_trajectory.action = visualization_msgs::Marker::ADD;
-    v_trajectory.lifetime = ros::Duration();
+    v_trajectory.lifetime = ros::Duration(1 / hz_);
     v_trajectory.id = i;
     v_trajectory.scale.x = 0.02;
     geometry_msgs::Pose pose;
@@ -677,7 +677,7 @@ void PointFollowPlanner::visualize_footprints(
     v_footprint.ns = pub.getTopic();
     v_footprint.type = visualization_msgs::Marker::LINE_STRIP;
     v_footprint.action = visualization_msgs::Marker::ADD;
-    v_footprint.lifetime = ros::Duration();
+    v_footprint.lifetime = ros::Duration(1 / hz_);
     v_footprint.id = i;
     v_footprint.scale.x = 0.01;
     geometry_msgs::Pose pose;
