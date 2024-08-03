@@ -441,7 +441,7 @@ void PointFollowPlanner::planning(
     generate_trajectory(best_traj, cmd_vel.linear.x, cmd_vel.angular.z);
     trajectories.push_back(best_traj);
   }
-  else if (fabs(dynamic_window.max_velocity_) < DBL_EPSILON)
+  else if (fabs(dynamic_window.max_velocity_ - dynamic_window.min_velocity_) < DBL_EPSILON)
   {
     generate_trajectory(best_traj, 0.0, 0.0);
     trajectories.push_back(best_traj);
