@@ -8,8 +8,8 @@
 
 PointFollowPlanner::PointFollowPlanner(void)
     : private_nh_("~"), goal_subscribed_(false), footprint_subscribed_(false), odom_updated_(false),
-      local_map_updated_(false), is_behind_obj_(false), has_reached_(false), local_map_not_sub_count_(0),
-      odom_not_sub_count_(0)
+      local_map_updated_(false), is_behind_obj_(false), has_reached_(false), turn_at_goal_flag_(true),
+      local_map_not_sub_count_(0), odom_not_sub_count_(0)
 {
   private_nh_.param<double>("hz", hz_, {20});
   private_nh_.param<std::string>("robot_frame", robot_frame_, {"base_link"});
@@ -74,6 +74,9 @@ PointFollowPlanner::PointFollowPlanner(void)
   odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
   target_velocity_sub_ = nh_.subscribe("/target_velocity", 1, &PointFollowPlanner::target_velocity_callback, this);
   dist_to_goal_th_sub_ = nh_.subscribe("/dist_to_goal_th", 1, &PointFollowPlanner::dist_to_goal_th_callback, this);
+
+  turn_at_goal_flag_server_ =
+      private_nh_.advertiseService("goal/turn", &PointFollowPlanner::turn_at_goal_flag_callback, this);
 }
 
 PointFollowPlanner::State::State(void) : x_(0.0), y_(0.0), yaw_(0.0), velocity_(0.0), yawrate_(0.0) {}
@@ -148,6 +151,17 @@ void PointFollowPlanner::dist_to_goal_th_callback(const std_msgs::Float64ConstPt
 {
   dist_to_goal_th_ = msg->data;
   ROS_INFO_THROTTLE(1.0, "distance to goal threshold was updated to %f [m]", dist_to_goal_th_);
+}
+
+bool PointFollowPlanner::turn_at_goal_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+{
+  turn_at_goal_flag_ = req.data;
+  res.success = true;
+  if (turn_at_goal_flag_)
+    res.message = "Enable turning at the goal";
+  else
+    res.message = "Disable turning at the goal";
+  return true;
 }
 
 void PointFollowPlanner::set_dist_to_obj_th(const geometry_msgs::PolygonStamped &footprint)
@@ -491,13 +505,13 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   else
   {
     has_reached_ = true;
-    if (target_velocity_ >= 0.0 && turn_direction_th_ < fabs(goal[2]))
+    if (target_velocity_ >= 0.0 && turn_direction_th_ < fabs(goal[2]) && turn_at_goal_flag_)
     {
       cmd_vel.angular.z = goal[2] > 0 ? std::min(goal[2], max_yawrate_) : std::max(goal[2], -max_yawrate_);
       cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
                                                 : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
     }
-    else if (target_velocity_ < 0.0 && turn_direction_th_ < M_PI - fabs(goal[2]))
+    else if (target_velocity_ < 0.0 && turn_direction_th_ < M_PI - fabs(goal[2]) && turn_at_goal_flag_)
     {
       cmd_vel.angular.z =
           goal[2] > 0 ? std::max(-M_PI + goal[2], -max_yawrate_) : std::min(M_PI + goal[2], max_yawrate_);

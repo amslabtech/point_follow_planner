@@ -13,6 +13,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
+#include <std_srvs/SetBool.h>
 #include <string>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
@@ -61,6 +62,7 @@ protected:
   void odom_callback(const nav_msgs::OdometryConstPtr &msg);
   void target_velocity_callback(const geometry_msgs::TwistConstPtr &msg);
   void dist_to_goal_th_callback(const std_msgs::Float64ConstPtr &msg);
+  bool turn_at_goal_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
   // others
   void motion(State &state, const double velocity, const double yawrate);
@@ -124,6 +126,7 @@ protected:
   bool local_map_updated_;
   bool is_behind_obj_;
   bool has_reached_;
+  bool turn_at_goal_flag_;
   int velocity_samples_;
   int yawrate_samples_;
   int subscribe_count_th_;
@@ -144,6 +147,7 @@ protected:
   ros::Subscriber odom_sub_;
   ros::Subscriber target_velocity_sub_;
   ros::Subscriber dist_to_goal_th_sub_;
+  ros::ServiceServer turn_at_goal_flag_server_;
 
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseArray obs_list_;
