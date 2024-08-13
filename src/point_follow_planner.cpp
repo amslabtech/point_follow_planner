@@ -126,7 +126,7 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
 {
   if (msg->linear.x >= 0.0)
   {
-    if (max_velocity_ < 0.0)
+    if (min_velocity_ < 0.0)
     {
       const double tmp = min_velocity_;
       min_velocity_ = -max_velocity_;
