@@ -505,16 +505,9 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   else
   {
     has_reached_ = true;
-    if (target_velocity_ >= 0.0 && turn_direction_th_ < fabs(goal[2]) && turn_at_goal_flag_)
+    if (turn_direction_th_ < fabs(goal[2]) && turn_at_goal_flag_)
     {
       cmd_vel.angular.z = goal[2] > 0 ? std::min(goal[2], max_yawrate_) : std::max(goal[2], -max_yawrate_);
-      cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
-                                                : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
-    }
-    else if (target_velocity_ < 0.0 && turn_direction_th_ < M_PI - fabs(goal[2]) && turn_at_goal_flag_)
-    {
-      cmd_vel.angular.z =
-          goal[2] > 0 ? std::max(-M_PI + goal[2], -max_yawrate_) : std::min(M_PI + goal[2], max_yawrate_);
       cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
                                                 : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
     }
