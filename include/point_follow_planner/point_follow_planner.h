@@ -73,6 +73,7 @@ protected:
   void target_velocity_callback(const geometry_msgs::TwistConstPtr &msg);
   void dist_to_goal_th_callback(const std_msgs::Float64ConstPtr &msg);
   bool turn_at_goal_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+  bool recovery_mode_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
   // others
   void motion(State &state, const double velocity, const double yawrate);
@@ -160,6 +161,7 @@ protected:
   ros::Subscriber target_velocity_sub_;
   ros::Subscriber dist_to_goal_th_sub_;
   ros::ServiceServer turn_at_goal_flag_server_;
+  ros::ServiceServer recovery_mode_flag_server_;
 
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseArray obs_list_;

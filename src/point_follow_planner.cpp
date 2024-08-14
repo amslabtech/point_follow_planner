@@ -87,6 +87,8 @@ PointFollowPlanner::PointFollowPlanner(void)
 
   turn_at_goal_flag_server_ =
       private_nh_.advertiseService("goal/turn", &PointFollowPlanner::turn_at_goal_flag_callback, this);
+  recovery_mode_flag_server_ =
+      private_nh_.advertiseService("recovery/available", &PointFollowPlanner::recovery_mode_flag_callback, this);
 }
 
 PointFollowPlanner::State::State(void) : x_(0.0), y_(0.0), yaw_(0.0), velocity_(0.0), yawrate_(0.0) {}
@@ -171,6 +173,17 @@ bool PointFollowPlanner::turn_at_goal_flag_callback(std_srvs::SetBool::Request &
     res.message = "Enable turning at the goal";
   else
     res.message = "Disable turning at the goal";
+  return true;
+}
+
+bool PointFollowPlanner::recovery_mode_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+{
+  recovery_params_.available = req.data;
+  res.success = true;
+  if (recovery_params_.available)
+    res.message = "Recovery mode is available..";
+  else
+    res.message = "Recovery mode is unavailable..";
   return true;
 }
 
