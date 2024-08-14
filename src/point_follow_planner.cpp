@@ -113,6 +113,13 @@ void PointFollowPlanner::goal_callback(const geometry_msgs::PoseStampedConstPtr 
   {
     ROS_ERROR("%s", ex.what());
   }
+
+  if (0 < recovery_params_.recovery_count)
+  {
+    const float goal_dist = target_velocity_ >= 0.0 ? recovery_params_.goal_dist : -recovery_params_.goal_dist;
+    goal_.pose.position.x = goal_dist * cos(recovery_params_.goal_angle);
+    goal_.pose.position.y = goal_dist * sin(recovery_params_.goal_angle);
+  }
 }
 
 void PointFollowPlanner::footprint_callback(const geometry_msgs::PolygonStampedPtr &msg)
