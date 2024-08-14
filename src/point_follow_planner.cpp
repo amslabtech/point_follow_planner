@@ -136,7 +136,11 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr &msg)
 
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr &msg)
 {
-  if (msg->linear.x >= 0.0)
+  geometry_msgs::Twist target_velocity_msg = *msg;
+  if (recovery_params_.available)
+    target_velocity_msg.linear.x *= -1.0;
+
+  if (target_velocity_msg.linear.x >= 0.0)
   {
     if (min_velocity_ < 0.0)
     {
@@ -144,7 +148,7 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
       min_velocity_ = -max_velocity_;
       max_velocity_ = -tmp;
     }
-    target_velocity_ = std::min(msg->linear.x, max_velocity_);
+    target_velocity_ = std::min(target_velocity_msg.linear.x, max_velocity_);
   }
   else
   {
@@ -154,7 +158,7 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
       min_velocity_ = -max_velocity_;
       max_velocity_ = -tmp;
     }
-    target_velocity_ = std::max(msg->linear.x, min_velocity_);
+    target_velocity_ = std::max(target_velocity_msg.linear.x, min_velocity_);
   }
   ROS_INFO_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
 }
