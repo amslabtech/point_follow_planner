@@ -117,8 +117,10 @@ void PointFollowPlanner::goal_callback(const geometry_msgs::PoseStampedConstPtr 
   if (0 < recovery_params_.recovery_count)
   {
     const float goal_dist = target_velocity_ >= 0.0 ? recovery_params_.goal_dist : -recovery_params_.goal_dist;
-    goal_.pose.position.x = goal_dist * cos(recovery_params_.goal_angle);
-    goal_.pose.position.y = goal_dist * sin(recovery_params_.goal_angle);
+    const float goal_angle = fabs(recovery_params_.goal_angle) < angle_to_goal_th_ ? recovery_params_.goal_angle
+                                                                                   : angle_to_goal_th_ - DBL_EPSILON;
+    goal_.pose.position.x = goal_dist * cos(goal_angle);
+    goal_.pose.position.y = goal_dist * sin(goal_angle);
   }
 }
 
