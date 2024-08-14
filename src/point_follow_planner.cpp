@@ -40,6 +40,9 @@ PointFollowPlanner::PointFollowPlanner(void)
   private_nh_.param<float>("recovery/goal_dist", recovery_params_.goal_dist, {5.0});
   private_nh_.param<float>("recovery/goal_angle", recovery_params_.goal_angle, {0.1});
   private_nh_.param<std::string>("recovery/sound_file", recovery_params_.sound_file, {""});
+  // set recovery params
+  recovery_params_.stuck_count_th = static_cast<int>(recovery_params_.stuck_time_th * hz_);
+  recovery_params_.max_recovery_count = static_cast<int>(recovery_params_.time * hz_);
 
   ROS_INFO("=== Point Followe Planner ===");
   ROS_INFO_STREAM("hz: " << hz_);
@@ -137,7 +140,7 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr &msg)
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr &msg)
 {
   geometry_msgs::Twist target_velocity_msg = *msg;
-  if (recovery_params_.available)
+  if (0 < recovery_params_.recovery_count)
     target_velocity_msg.linear.x *= -1.0;
 
   if (target_velocity_msg.linear.x >= 0.0)
@@ -185,9 +188,15 @@ bool PointFollowPlanner::recovery_mode_flag_callback(std_srvs::SetBool::Request 
   recovery_params_.available = req.data;
   res.success = true;
   if (recovery_params_.available)
+  {
     res.message = "Recovery mode is available..";
+  }
   else
+  {
     res.message = "Recovery mode is unavailable..";
+    recovery_params_.recovery_count = 0;
+    recovery_params_.stuck_count = 0;
+  }
   return true;
 }
 
@@ -502,6 +511,30 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   std::vector<std::vector<State>> trajectories;
   const Eigen::Vector3d goal(goal_.pose.position.x, goal_.pose.position.y, tf::getYaw(goal_.pose.orientation));
 
+  if (recovery_params_.available)
+  {
+    if (0 < recovery_params_.recovery_count && recovery_params_.recovery_count <= recovery_params_.max_recovery_count)
+    {
+      ROS_WARN_THROTTLE(1.0, "Recovery mode is activated");
+      recovery_params_.recovery_count++;
+    }
+    else if (is_stuck())
+    {
+      recovery_params_.recovery_count = 0;
+      recovery_params_.stuck_count++;
+      if (recovery_params_.stuck_count_th <= recovery_params_.stuck_count)
+      {
+        recovery_params_.recovery_count++;
+        sound(recovery_params_.sound_file);
+      }
+    }
+    else
+    {
+      recovery_params_.recovery_count = 0;
+      recovery_params_.stuck_count = 0;
+    }
+  }
+
   if (dist_to_goal_th_ < goal.segment(0, 2).norm() && !has_reached_)
   {
     if (can_adjust_robot_direction(goal))
@@ -552,6 +585,21 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   visualize_footprints(best_traj, 0, 0, 1, predict_footprints_pub_);
 
   return cmd_vel;
+}
+
+bool PointFollowPlanner::is_stuck()
+{
+  return fabs(current_velocity_.linear.x) < DBL_EPSILON && fabs(current_velocity_.angular.z) < DBL_EPSILON;
+}
+
+void PointFollowPlanner::sound(const std::string &path)
+{
+  if (path == "")
+    return;
+
+  const std::string sound_command = "aplay " + path + " &";
+  if (system(sound_command.c_str()) == -1)
+    ROS_WARN("Failed to play sound");
 }
 
 bool PointFollowPlanner::can_adjust_robot_direction(const Eigen::Vector3d &goal)

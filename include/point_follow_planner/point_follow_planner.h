@@ -58,6 +58,10 @@ protected:
   struct RecoveryParams
   {
     bool available = false;
+    int stuck_count = 0;
+    int stuck_count_th;
+    int recovery_count = 0;
+    int max_recovery_count;
     float stuck_time_th;
     float time;
     float goal_dist;
@@ -98,6 +102,8 @@ protected:
   void
   planning(std::vector<State> &best_traj, std::vector<std::vector<State>> &trajectories, const Eigen::Vector3d &goal);
   geometry_msgs::Twist calc_cmd_vel();
+  bool is_stuck();
+  void sound(const std::string &path);
   Window calc_dynamic_window(const geometry_msgs::Twist &current_velocity);
   void visualize_trajectory(
       const std::vector<State> &trajectory, const double r, const double g, const double b, const ros::Publisher &pub);
