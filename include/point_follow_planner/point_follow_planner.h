@@ -55,6 +55,20 @@ protected:
   private:
   };
 
+  struct RecoveryParams
+  {
+    bool available = false;
+    int stuck_count = 0;
+    int stuck_count_th;
+    int recovery_count = 0;
+    int max_recovery_count;
+    float stuck_time_th;
+    float time;
+    float goal_dist;
+    float goal_angle;
+    std::string sound_file;
+  };
+
   // callback function
   void goal_callback(const geometry_msgs::PoseStampedConstPtr &msg);
   void footprint_callback(const geometry_msgs::PolygonStampedPtr &msg);
@@ -63,6 +77,7 @@ protected:
   void target_velocity_callback(const geometry_msgs::TwistConstPtr &msg);
   void dist_to_goal_th_callback(const std_msgs::Float64ConstPtr &msg);
   bool turn_at_goal_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+  bool recovery_mode_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
   // others
   void motion(State &state, const double velocity, const double yawrate);
@@ -87,6 +102,8 @@ protected:
   void
   planning(std::vector<State> &best_traj, std::vector<std::vector<State>> &trajectories, const Eigen::Vector3d &goal);
   geometry_msgs::Twist calc_cmd_vel();
+  bool is_stuck();
+  void sound(const std::string &path);
   Window calc_dynamic_window(const geometry_msgs::Twist &current_velocity);
   void visualize_trajectory(
       const std::vector<State> &trajectory, const double r, const double g, const double b, const ros::Publisher &pub);
@@ -133,6 +150,8 @@ protected:
   int odom_not_sub_count_;
   int local_map_not_sub_count_;
 
+  RecoveryParams recovery_params_;
+
   ros::NodeHandle nh_;
   ros::NodeHandle private_nh_;
 
@@ -148,6 +167,7 @@ protected:
   ros::Subscriber target_velocity_sub_;
   ros::Subscriber dist_to_goal_th_sub_;
   ros::ServiceServer turn_at_goal_flag_server_;
+  ros::ServiceServer recovery_mode_flag_server_;
 
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseArray obs_list_;

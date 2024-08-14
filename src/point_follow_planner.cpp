@@ -35,6 +35,14 @@ PointFollowPlanner::PointFollowPlanner(void)
   private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
   private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
   private_nh_.param<int>("subscribe_count_th", subscribe_count_th_, {3});
+  private_nh_.param<float>("recovery/stuck_time_th", recovery_params_.stuck_time_th, {5.0});
+  private_nh_.param<float>("recovery/time", recovery_params_.time, {1.0});
+  private_nh_.param<float>("recovery/goal_dist", recovery_params_.goal_dist, {5.0});
+  private_nh_.param<float>("recovery/goal_angle", recovery_params_.goal_angle, {0.1});
+  private_nh_.param<std::string>("recovery/sound_file", recovery_params_.sound_file, {""});
+  // set recovery params
+  recovery_params_.stuck_count_th = static_cast<int>(recovery_params_.stuck_time_th * hz_);
+  recovery_params_.max_recovery_count = static_cast<int>(recovery_params_.time * hz_);
 
   ROS_INFO("=== Point Followe Planner ===");
   ROS_INFO_STREAM("hz: " << hz_);
@@ -61,6 +69,11 @@ PointFollowPlanner::PointFollowPlanner(void)
   ROS_INFO_STREAM("velocity_samples: " << velocity_samples_);
   ROS_INFO_STREAM("yawrate_samples: " << yawrate_samples_);
   ROS_INFO_STREAM("subscribe_count_th: " << subscribe_count_th_);
+  ROS_INFO_STREAM("recovery/stuck_time_th: " << recovery_params_.stuck_time_th);
+  ROS_INFO_STREAM("recovery/time: " << recovery_params_.time);
+  ROS_INFO_STREAM("recovery/goal_dist: " << recovery_params_.goal_dist);
+  ROS_INFO_STREAM("recovery/goal_angle: " << recovery_params_.goal_angle);
+  ROS_INFO_STREAM("recovery/sound_file: " << recovery_params_.sound_file);
 
   cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
   best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
@@ -77,6 +90,8 @@ PointFollowPlanner::PointFollowPlanner(void)
 
   turn_at_goal_flag_server_ =
       private_nh_.advertiseService("goal/turn", &PointFollowPlanner::turn_at_goal_flag_callback, this);
+  recovery_mode_flag_server_ =
+      private_nh_.advertiseService("recovery/available", &PointFollowPlanner::recovery_mode_flag_callback, this);
 }
 
 PointFollowPlanner::State::State(void) : x_(0.0), y_(0.0), yaw_(0.0), velocity_(0.0), yawrate_(0.0) {}
@@ -97,6 +112,15 @@ void PointFollowPlanner::goal_callback(const geometry_msgs::PoseStampedConstPtr 
   catch (tf::TransformException ex)
   {
     ROS_ERROR("%s", ex.what());
+  }
+
+  if (0 < recovery_params_.recovery_count)
+  {
+    const float goal_dist = target_velocity_ >= 0.0 ? recovery_params_.goal_dist : -recovery_params_.goal_dist;
+    const float goal_angle = fabs(recovery_params_.goal_angle) < angle_to_goal_th_ ? recovery_params_.goal_angle
+                                                                                   : angle_to_goal_th_ - DBL_EPSILON;
+    goal_.pose.position.x = goal_dist * cos(goal_angle);
+    goal_.pose.position.y = goal_dist * sin(goal_angle);
   }
 }
 
@@ -124,7 +148,11 @@ void PointFollowPlanner::odom_callback(const nav_msgs::OdometryConstPtr &msg)
 
 void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr &msg)
 {
-  if (msg->linear.x >= 0.0)
+  geometry_msgs::Twist target_velocity_msg = *msg;
+  if (0 < recovery_params_.recovery_count)
+    target_velocity_msg.linear.x *= -1.0;
+
+  if (target_velocity_msg.linear.x >= 0.0)
   {
     if (min_velocity_ < 0.0)
     {
@@ -132,7 +160,7 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
       min_velocity_ = -max_velocity_;
       max_velocity_ = -tmp;
     }
-    target_velocity_ = std::min(msg->linear.x, max_velocity_);
+    target_velocity_ = std::min(target_velocity_msg.linear.x, max_velocity_);
   }
   else
   {
@@ -142,7 +170,7 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
       min_velocity_ = -max_velocity_;
       max_velocity_ = -tmp;
     }
-    target_velocity_ = std::max(msg->linear.x, min_velocity_);
+    target_velocity_ = std::max(target_velocity_msg.linear.x, min_velocity_);
   }
   ROS_INFO_THROTTLE(1.0, "target velocity was updated to %f [m/s]", target_velocity_);
 }
@@ -161,6 +189,23 @@ bool PointFollowPlanner::turn_at_goal_flag_callback(std_srvs::SetBool::Request &
     res.message = "Enable turning at the goal";
   else
     res.message = "Disable turning at the goal";
+  return true;
+}
+
+bool PointFollowPlanner::recovery_mode_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+{
+  recovery_params_.available = req.data;
+  res.success = true;
+  if (recovery_params_.available)
+  {
+    res.message = "Recovery mode is available..";
+  }
+  else
+  {
+    res.message = "Recovery mode is unavailable..";
+    recovery_params_.recovery_count = 0;
+    recovery_params_.stuck_count = 0;
+  }
   return true;
 }
 
@@ -475,6 +520,30 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   std::vector<std::vector<State>> trajectories;
   const Eigen::Vector3d goal(goal_.pose.position.x, goal_.pose.position.y, tf::getYaw(goal_.pose.orientation));
 
+  if (recovery_params_.available)
+  {
+    if (0 < recovery_params_.recovery_count && recovery_params_.recovery_count <= recovery_params_.max_recovery_count)
+    {
+      ROS_WARN_THROTTLE(1.0, "Recovery mode is activated");
+      recovery_params_.recovery_count++;
+    }
+    else if (is_stuck())
+    {
+      recovery_params_.recovery_count = 0;
+      recovery_params_.stuck_count++;
+      if (recovery_params_.stuck_count_th <= recovery_params_.stuck_count)
+      {
+        recovery_params_.recovery_count++;
+        sound(recovery_params_.sound_file);
+      }
+    }
+    else
+    {
+      recovery_params_.recovery_count = 0;
+      recovery_params_.stuck_count = 0;
+    }
+  }
+
   if (dist_to_goal_th_ < goal.segment(0, 2).norm() && !has_reached_)
   {
     if (can_adjust_robot_direction(goal))
@@ -525,6 +594,21 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   visualize_footprints(best_traj, 0, 0, 1, predict_footprints_pub_);
 
   return cmd_vel;
+}
+
+bool PointFollowPlanner::is_stuck()
+{
+  return fabs(current_velocity_.linear.x) < DBL_EPSILON && fabs(current_velocity_.angular.z) < DBL_EPSILON;
+}
+
+void PointFollowPlanner::sound(const std::string &path)
+{
+  if (path == "")
+    return;
+
+  const std::string sound_command = "aplay " + path + " &";
+  if (system(sound_command.c_str()) == -1)
+    ROS_WARN("Failed to play sound");
 }
 
 bool PointFollowPlanner::can_adjust_robot_direction(const Eigen::Vector3d &goal)
