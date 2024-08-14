@@ -55,6 +55,16 @@ protected:
   private:
   };
 
+  struct RecoveryParams
+  {
+    bool available = false;
+    float stuck_time_th;
+    float time;
+    float goal_dist;
+    float goal_angle;
+    std::string sound_file;
+  };
+
   // callback function
   void goal_callback(const geometry_msgs::PoseStampedConstPtr &msg);
   void footprint_callback(const geometry_msgs::PolygonStampedPtr &msg);
@@ -132,6 +142,8 @@ protected:
   int subscribe_count_th_;
   int odom_not_sub_count_;
   int local_map_not_sub_count_;
+
+  RecoveryParams recovery_params_;
 
   ros::NodeHandle nh_;
   ros::NodeHandle private_nh_;

@@ -35,6 +35,11 @@ PointFollowPlanner::PointFollowPlanner(void)
   private_nh_.param<int>("velocity_samples", velocity_samples_, {3});
   private_nh_.param<int>("yawrate_samples", yawrate_samples_, {20});
   private_nh_.param<int>("subscribe_count_th", subscribe_count_th_, {3});
+  private_nh_.param<float>("recovery/stuck_time_th", recovery_params_.stuck_time_th, {5.0});
+  private_nh_.param<float>("recovery/time", recovery_params_.time, {1.0});
+  private_nh_.param<float>("recovery/goal_dist", recovery_params_.goal_dist, {5.0});
+  private_nh_.param<float>("recovery/goal_angle", recovery_params_.goal_angle, {0.1});
+  private_nh_.param<std::string>("recovery/sound_file", recovery_params_.sound_file, {""});
 
   ROS_INFO("=== Point Followe Planner ===");
   ROS_INFO_STREAM("hz: " << hz_);
@@ -61,6 +66,11 @@ PointFollowPlanner::PointFollowPlanner(void)
   ROS_INFO_STREAM("velocity_samples: " << velocity_samples_);
   ROS_INFO_STREAM("yawrate_samples: " << yawrate_samples_);
   ROS_INFO_STREAM("subscribe_count_th: " << subscribe_count_th_);
+  ROS_INFO_STREAM("recovery/stuck_time_th: " << recovery_params_.stuck_time_th);
+  ROS_INFO_STREAM("recovery/time: " << recovery_params_.time);
+  ROS_INFO_STREAM("recovery/goal_dist: " << recovery_params_.goal_dist);
+  ROS_INFO_STREAM("recovery/goal_angle: " << recovery_params_.goal_angle);
+  ROS_INFO_STREAM("recovery/sound_file: " << recovery_params_.sound_file);
 
   cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
   best_trajectory_pub_ = private_nh_.advertise<visualization_msgs::Marker>("best_trajectory", 1);
