@@ -10,3 +10,8 @@ slow_velocity_th: 0.1
 dist_from_head_to_obj: 0.5
 velocity_samples: 3
 yawrate_samples: 20
+recovery:
+    stuck_time_th: 5.0
+    time: 1.0
+    goal_dist: 5.0
+    goal_angle: 0.1
