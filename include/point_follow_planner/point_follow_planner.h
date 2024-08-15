@@ -66,6 +66,7 @@ protected:
     float time;
     float goal_dist;
     float goal_angle;
+    double max_velocity;
     std::string sound_file;
   };
 
