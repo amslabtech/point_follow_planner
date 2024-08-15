@@ -39,6 +39,7 @@ PointFollowPlanner::PointFollowPlanner(void)
   private_nh_.param<float>("recovery/time", recovery_params_.time, {1.0});
   private_nh_.param<float>("recovery/goal_dist", recovery_params_.goal_dist, {5.0});
   private_nh_.param<float>("recovery/goal_angle", recovery_params_.goal_angle, {0.1});
+  private_nh_.param<double>("recovery/max_velocity", recovery_params_.max_velocity, {0.5});
   private_nh_.param<std::string>("recovery/sound_file", recovery_params_.sound_file, {""});
   // set recovery params
   recovery_params_.stuck_count_th = static_cast<int>(recovery_params_.stuck_time_th * hz_);
@@ -73,6 +74,7 @@ PointFollowPlanner::PointFollowPlanner(void)
   ROS_INFO_STREAM("recovery/time: " << recovery_params_.time);
   ROS_INFO_STREAM("recovery/goal_dist: " << recovery_params_.goal_dist);
   ROS_INFO_STREAM("recovery/goal_angle: " << recovery_params_.goal_angle);
+  ROS_INFO_STREAM("recovery/max_velocity: " << recovery_params_.max_velocity);
   ROS_INFO_STREAM("recovery/sound_file: " << recovery_params_.sound_file);
 
   cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -150,7 +152,12 @@ void PointFollowPlanner::target_velocity_callback(const geometry_msgs::TwistCons
 {
   geometry_msgs::Twist target_velocity_msg = *msg;
   if (0 < recovery_params_.recovery_count)
+  {
     target_velocity_msg.linear.x *= -1.0;
+    target_velocity_msg.linear.x = target_velocity_msg.linear.x > 0
+                                       ? std::min(target_velocity_msg.linear.x, recovery_params_.max_velocity)
+                                       : std::max(target_velocity_msg.linear.x, -recovery_params_.max_velocity);
+  }
 
   if (target_velocity_msg.linear.x >= 0.0)
   {
