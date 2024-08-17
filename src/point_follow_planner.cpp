@@ -497,14 +497,13 @@ void PointFollowPlanner::planning(
     std::vector<State> &best_traj, std::vector<std::vector<State>> &trajectories, const Eigen::Vector3d &goal)
 {
   const Window dynamic_window = calc_dynamic_window(current_velocity_);
-  geometry_msgs::Twist cmd_vel;
 
   if (fabs(previous_velocity_.linear.x) < velocity_th_for_stop_behind_obj_ && is_behind_obj_)
   {
     ROS_WARN_THROTTLE(1.0, "##########################");
     ROS_WARN_THROTTLE(1.0, "### stop behind object ###");
     ROS_WARN_THROTTLE(1.0, "##########################");
-    generate_trajectory(best_traj, cmd_vel.linear.x, cmd_vel.angular.z);
+    generate_trajectory(best_traj, 0.0, 0.0);
     trajectories.push_back(best_traj);
   }
   else if (fabs(dynamic_window.max_velocity_ - dynamic_window.min_velocity_) < DBL_EPSILON)
