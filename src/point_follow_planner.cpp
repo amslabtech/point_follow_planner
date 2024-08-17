@@ -135,7 +135,7 @@ void PointFollowPlanner::footprint_callback(const geometry_msgs::PolygonStampedP
 
 void PointFollowPlanner::local_map_callback(const nav_msgs::OccupancyGridConstPtr &msg)
 {
-  raycast(*msg);
+  create_obs_list(*msg);
   local_map_not_sub_count_ = 0;
   local_map_updated_ = true;
 }
@@ -229,7 +229,7 @@ void PointFollowPlanner::set_dist_to_obj_th(const geometry_msgs::PolygonStamped 
   dist_to_obj_th_y_ = max_y;
 }
 
-void PointFollowPlanner::raycast(const nav_msgs::OccupancyGrid &map)
+void PointFollowPlanner::create_obs_list(const nav_msgs::OccupancyGrid &map)
 {
   obs_list_.poses.clear();
   const double max_search_dist = hypot(map.info.origin.position.x, map.info.origin.position.y);
