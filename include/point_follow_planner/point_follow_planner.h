@@ -82,7 +82,7 @@ protected:
 
   // others
   void motion(State &state, const double velocity, const double yawrate);
-  void raycast(const nav_msgs::OccupancyGrid &map);
+  void create_obs_list(const nav_msgs::OccupancyGrid &map);
   void generate_trajectory(std::vector<State> &trajectory, const double velocity, const double yawrate);
   void generate_trajectory(std::vector<State> &trajectory, const double yawrate, const Eigen::Vector3d &goal);
   void push_back_trajectory(std::vector<std::vector<State>> &trajectories, const double velocity, const double yawrate);
