@@ -248,7 +248,9 @@ void PointFollowPlanner::create_obs_list(const nav_msgs::OccupancyGrid &map)
       {
         if (map.data[index_x + index_y * map.info.width] == 100)
         {
-          obs_list_.poses.push_back(pose);
+          if (can_add_to_obs_list(pose.position))
+            obs_list_.poses.push_back(pose);
+
           if (target_velocity_ >= 0.0)
           {
             if ((0.0 < pose.position.x && pose.position.x < dist_to_obj_th_x_) &&
@@ -266,6 +268,25 @@ void PointFollowPlanner::create_obs_list(const nav_msgs::OccupancyGrid &map)
       }
     }
   }
+}
+
+bool PointFollowPlanner::can_add_to_obs_list(const geometry_msgs::Point &point)
+{
+  if (0 < recovery_params_.recovery_count && fabs(point.y) < dist_to_obj_th_y_)
+  {
+    if (target_velocity_ >= 0.0)
+    {
+      if (point.x < 0.0)
+        return false;
+    }
+    else
+    {
+      if (0.0 < point.x)
+        return false;
+    }
+  }
+
+  return true;
 }
 
 PointFollowPlanner::Window PointFollowPlanner::calc_dynamic_window(const geometry_msgs::Twist &current_velocity)
