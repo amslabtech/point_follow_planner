@@ -296,11 +296,13 @@ PointFollowPlanner::Window PointFollowPlanner::calc_dynamic_window(const geometr
   {
     window.min_velocity_ = std::max((current_velocity.linear.x - max_deceleration_ * dt_), min_velocity_);
     window.max_velocity_ = std::min((current_velocity.linear.x + max_acceleration_ * dt_), target_velocity_);
+    window.max_velocity_ = std::max(window.max_velocity_, min_velocity_);
   }
   else
   {
     window.min_velocity_ = std::max((current_velocity.linear.x - max_acceleration_ * dt_), target_velocity_);
     window.max_velocity_ = std::min((current_velocity.linear.x + max_deceleration_ * dt_), max_velocity_);
+    window.min_velocity_ = std::min(window.min_velocity_, max_velocity_);
   }
   window.min_yawrate_ = std::max((current_velocity.angular.z - max_d_yawrate_ * dt_), -max_yawrate_);
   window.max_yawrate_ = std::min((current_velocity.angular.z + max_d_yawrate_ * dt_), max_yawrate_);
