@@ -558,6 +558,9 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   {
     if (0 < recovery_params_.recovery_count && recovery_params_.recovery_count <= recovery_params_.max_recovery_count)
     {
+      ROS_WARN_THROTTLE(0.5, "################");
+      ROS_WARN_THROTTLE(0.5, "### recovery ###");
+      ROS_WARN_THROTTLE(0.5, "################");
       ROS_WARN_STREAM_THROTTLE(0.5, "recovery time: " << recovery_params_.recovery_count / static_cast<float>(hz_));
       recovery_params_.recovery_count++;
     }
@@ -569,6 +572,7 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
       if (recovery_params_.stuck_count_th <= recovery_params_.stuck_count)
       {
         recovery_params_.recovery_count++;
+        recovery_params_.stuck_count = 0;
         sound(recovery_params_.sound_file);
       }
     }
