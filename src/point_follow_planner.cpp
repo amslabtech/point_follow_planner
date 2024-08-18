@@ -558,11 +558,12 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   {
     if (0 < recovery_params_.recovery_count && recovery_params_.recovery_count <= recovery_params_.max_recovery_count)
     {
-      ROS_WARN_THROTTLE(1.0, "Recovery mode is activated");
+      ROS_WARN_STREAM_THROTTLE(0.5, "recovery time: " << recovery_params_.recovery_count / static_cast<float>(hz_));
       recovery_params_.recovery_count++;
     }
     else if (is_stuck())
     {
+      ROS_WARN_STREAM_THROTTLE(0.5, "stuck time: " << recovery_params_.stuck_count / static_cast<float>(hz_));
       recovery_params_.recovery_count = 0;
       recovery_params_.stuck_count++;
       if (recovery_params_.stuck_count_th <= recovery_params_.stuck_count)
