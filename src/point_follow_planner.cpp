@@ -423,6 +423,12 @@ void PointFollowPlanner::generate_trajectory(
 void PointFollowPlanner::generate_trajectory_for_adjusting_robot_direction(
     std::vector<State> &trajectory, const double yawrate, const double yaw_diff)
 {
+  if (fabs(yawrate) < DBL_EPSILON || fabs(yaw_diff) < DBL_EPSILON )
+  {
+    generate_trajectory(trajectory, 0.0, 0.0);
+    return;
+  }
+
   trajectory.clear();
   State state;
   double predict_time;
@@ -593,8 +599,6 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
     else
     {
       planning(best_traj, trajectories, goal);
-      cmd_vel.linear.x = best_traj.front().velocity_;
-      cmd_vel.angular.z = best_traj.front().yawrate_;
     }
   }
   else
@@ -620,6 +624,9 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
   visualize_trajectory(best_traj, 1, 0, 0, best_trajectory_pub_);
   visualize_trajectories(trajectories, 0, 1, 0, candidate_trajectories_pub_);
   visualize_footprints(best_traj, 0, 0, 1, predict_footprints_pub_);
+
+  cmd_vel.linear.x = best_traj.front().velocity_;
+  cmd_vel.angular.z = best_traj.front().yawrate_;
 
   return cmd_vel;
 }
