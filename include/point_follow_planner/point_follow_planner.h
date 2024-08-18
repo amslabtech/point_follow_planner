@@ -84,7 +84,8 @@ protected:
   void motion(State &state, const double velocity, const double yawrate);
   void create_obs_list(const nav_msgs::OccupancyGrid &map);
   void generate_trajectory(std::vector<State> &trajectory, const double velocity, const double yawrate);
-  void generate_trajectory(std::vector<State> &trajectory, const double yawrate, const Eigen::Vector3d &goal);
+  void generate_trajectory_for_adjusting_robot_direction(
+      std::vector<State> &trajectory, const double yawrate, const double yaw_diff);
   void push_back_trajectory(std::vector<std::vector<State>> &trajectories, const double velocity, const double yawrate);
   void search_optimal_cmd_vel_for_goal(
       double &optimal_velocity, double &optimal_yawrate, const Window dynamic_window, const Eigen::Vector3d &goal,

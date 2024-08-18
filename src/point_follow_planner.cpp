@@ -420,17 +420,16 @@ void PointFollowPlanner::generate_trajectory(
   }
 }
 
-void PointFollowPlanner::generate_trajectory(
-    std::vector<State> &trajectory, const double yawrate, const Eigen::Vector3d &goal)
+void PointFollowPlanner::generate_trajectory_for_adjusting_robot_direction(
+    std::vector<State> &trajectory, const double yawrate, const double yaw_diff)
 {
   trajectory.clear();
   State state;
-  const double angle_to_goal = atan2(goal.y(), goal.x());
   double predict_time;
   if (target_velocity_ >= 0.0)
-    predict_time = fabs(angle_to_goal / (yawrate + DBL_EPSILON));
+    predict_time = fabs(yaw_diff / (yawrate + DBL_EPSILON));
   else
-    predict_time = fabs((M_PI - fabs(angle_to_goal)) / (yawrate + DBL_EPSILON));
+    predict_time = fabs((M_PI - fabs(yaw_diff)) / (yawrate + DBL_EPSILON));
 
   for (float t = 0; t <= predict_time; t += dt_)
   {
@@ -588,7 +587,7 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
       }
       cmd_vel.angular.z = cmd_vel.angular.z > 0 ? std::max(cmd_vel.angular.z, min_in_place_yawrate_)
                                                 : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
-      generate_trajectory(best_traj, cmd_vel.angular.z, goal);
+      generate_trajectory_for_adjusting_robot_direction(best_traj, cmd_vel.angular.z, goal[2]);
       trajectories.push_back(best_traj);
     }
     else
@@ -612,7 +611,9 @@ geometry_msgs::Twist PointFollowPlanner::calc_cmd_vel()
       has_finished_.data = true;
       has_reached_ = false;
     }
-    generate_trajectory(best_traj, cmd_vel.linear.x, cmd_vel.angular.z);
+    generate_trajectory_for_adjusting_robot_direction(best_traj, cmd_vel.angular.z, goal[2]);
+    if (check_collision(best_traj) && angle_to_goal_th_ < fabs(goal[2]))
+      generate_trajectory(best_traj, 0.0, 0.0);
     trajectories.push_back(best_traj);
   }
 
@@ -659,7 +660,7 @@ bool PointFollowPlanner::can_adjust_robot_direction(const Eigen::Vector3d &goal)
   yawrate = yawrate > 0 ? std::max(yawrate, min_in_place_yawrate_) : std::min(yawrate, -min_in_place_yawrate_);
 
   std::vector<State> traj;
-  generate_trajectory(traj, yawrate, goal);
+  generate_trajectory_for_adjusting_robot_direction(traj, yawrate, goal[2]);
 
   if (!check_collision(traj))
     return true;
