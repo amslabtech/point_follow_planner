@@ -77,6 +77,7 @@ protected:
   void odom_callback(const nav_msgs::OdometryConstPtr &msg);
   void target_velocity_callback(const geometry_msgs::TwistConstPtr &msg);
   void dist_to_goal_th_callback(const std_msgs::Float64ConstPtr &msg);
+  void dist_from_head_to_obj_callback(const std_msgs::Float64ConstPtr &msg);
   bool turn_at_goal_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   bool recovery_mode_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
@@ -169,6 +170,7 @@ protected:
   ros::Subscriber odom_sub_;
   ros::Subscriber target_velocity_sub_;
   ros::Subscriber dist_to_goal_th_sub_;
+  ros::Subscriber dist_from_head_to_obj_sub_;
   ros::ServiceServer turn_at_goal_flag_server_;
   ros::ServiceServer recovery_mode_flag_server_;
 

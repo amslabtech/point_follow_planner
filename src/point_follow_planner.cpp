@@ -89,6 +89,8 @@ PointFollowPlanner::PointFollowPlanner(void)
   odom_sub_ = nh_.subscribe("/odom", 1, &PointFollowPlanner::odom_callback, this);
   target_velocity_sub_ = nh_.subscribe("/target_velocity", 1, &PointFollowPlanner::target_velocity_callback, this);
   dist_to_goal_th_sub_ = nh_.subscribe("/dist_to_goal_th", 1, &PointFollowPlanner::dist_to_goal_th_callback, this);
+  dist_from_head_to_obj_sub_ =
+      nh_.subscribe("/dist_from_head_to_obj", 1, &PointFollowPlanner::dist_from_head_to_obj_callback, this);
 
   turn_at_goal_flag_server_ =
       private_nh_.advertiseService("goal/turn", &PointFollowPlanner::turn_at_goal_flag_callback, this);
@@ -186,6 +188,12 @@ void PointFollowPlanner::dist_to_goal_th_callback(const std_msgs::Float64ConstPt
 {
   dist_to_goal_th_ = msg->data;
   ROS_INFO_THROTTLE(1.0, "distance to goal threshold was updated to %f [m]", dist_to_goal_th_);
+}
+
+void PointFollowPlanner::dist_from_head_to_obj_callback(const std_msgs::Float64ConstPtr &msg)
+{
+  dist_from_head_to_obj_ = msg->data;
+  ROS_INFO_THROTTLE(1.0, "distance from head to object was updated to %f [m]", dist_from_head_to_obj_);
 }
 
 bool PointFollowPlanner::turn_at_goal_flag_callback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
